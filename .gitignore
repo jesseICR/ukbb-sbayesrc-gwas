@@ -1,0 +1,16 @@
+__pycache__/
+.DS_Store
+drafter.ipynb
+data/dragen_ids/*
+data/topmed_ids/*
+data/support/sbayesrc_hg38.csv
+
+reference/
+notes.md
+
+**/CLAUDE.md
+*_stub.py
+*_stub.sh
+data/support/ukb_snp_qc.txt
+data/support/ukbb_500k_qc_pass_direct_kinship_subsetted_snps.txt
+tools/
