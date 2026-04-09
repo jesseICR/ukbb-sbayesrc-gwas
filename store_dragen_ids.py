@@ -2,7 +2,7 @@
 
 Reads the combined alignment CSV (sbayesrc_hg38.csv) containing all chromosomes
 and writes one text file per chromosome (chr1.txt … chr22.txt) into
-genotypes/data/dragen_ids/, each containing DRAGEN-format variant IDs
+data/dragen_ids/, each containing DRAGEN-format variant IDs
 (e.g. DRAGEN:chr1:12345:A:G).
 
 Idempotent: skips chromosomes whose output file already exists.

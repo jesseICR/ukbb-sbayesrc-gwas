@@ -42,7 +42,7 @@ This pipeline depends on two companion repositories:
 **WGS (DRAGEN)**
 
 1. **Generate DRAGEN variant IDs** (`store_dragen_ids.py`)
-   Reads the alignment CSV (`genotypes/data/support/sbayesrc_hg38.csv`) and writes per-chromosome variant ID files to `genotypes/data/dragen_ids/chr{1..22}.txt` (git-ignored). Each ID has the format `DRAGEN:chr{chrom}:{pos}:{ref}:{alt}`.
+   Reads the alignment CSV (`data/support/sbayesrc_hg38.csv`) and writes per-chromosome variant ID files to `data/dragen_ids/chr{1..22}.txt` (git-ignored). Each ID has the format `DRAGEN:chr{chrom}:{pos}:{ref}:{alt}`.
 
 2. **Upload DRAGEN IDs to DNAnexus** (`upload_dragen_ids.sh`)
    Uploads the 22 chromosome ID files to `sbayesrc_genotypes/dragen_ids/` on DNAnexus. Skips files that already exist.
@@ -53,7 +53,7 @@ This pipeline depends on two companion repositories:
 **Imputed (TOPMed)**
 
 4. **Generate TopMed variant IDs** (`store_topmed_ids.py`)
-   Reads the same alignment CSV and writes per-chromosome colon-delimited variant ID files to `genotypes/data/topmed_ids/chr{1..22}.txt` (git-ignored). Each ID has the format `{chrom}:{pos}:{ref}:{alt}`.
+   Reads the same alignment CSV and writes per-chromosome colon-delimited variant ID files to `data/topmed_ids/chr{1..22}.txt` (git-ignored). Each ID has the format `{chrom}:{pos}:{ref}:{alt}`.
 
 5. **Upload TopMed IDs to DNAnexus** (`upload_topmed_ids.sh`)
    Uploads the 22 chromosome ID files to `sbayesrc_genotypes/topmed_ids/` on DNAnexus. Skips files that already exist.
@@ -90,7 +90,7 @@ This pipeline depends on two companion repositories:
 **Direct SNP bfile (for REGENIE step 1)**
 
 13. **Extract direct SNPs per chromosome** (`extract_direct_snps.sh`)
-    Uploads the direct SNP list (`genotypes/data/support/direct_snps/ukbb_500k_qc_pass_direct_snps.txt`, ~500k rsids) to DNAnexus, then submits 22 parallel Swiss Army Knife jobs (one per chromosome). Each job runs plink2 `--extract` to subset the merged pfile to directly genotyped SNPs. Outputs are stored in `sbayesrc_genotypes/direct_pfiles/` (.pgen/.pvar/.psam per chromosome).
+    Uploads the direct SNP list (`data/support/direct_snps/ukbb_500k_qc_pass_direct_snps.txt`, ~500k rsids) to DNAnexus, then submits 22 parallel Swiss Army Knife jobs (one per chromosome). Each job runs plink2 `--extract` to subset the merged pfile to directly genotyped SNPs. Outputs are stored in `sbayesrc_genotypes/direct_pfiles/` (.pgen/.pvar/.psam per chromosome).
 
 14. **Merge direct-SNP pfiles into bfile** (`make_direct_bfile.sh`)
     Submits a Swiss Army Knife job that uses plink2 `--pmerge-list` to merge the 22 per-chromosome direct-SNP pfiles into a single bfile at `sbayesrc_genotypes/direct_bfile/chr1_22_merged` (.bed/.bim/.fam). This bfile of directly genotyped SNPs is used as the input for REGENIE step 1 (whole-genome ridge regression).
@@ -112,7 +112,7 @@ This pipeline depends on two companion repositories:
 **ADMIXTURE K=6 projection (for population stratification)**
 
 19. **Prepare ADMIXTURE inputs** (`admixture_prep.sh` + `admixture_align_alleles.py`)
-    Downloads the ADMIXTURE binary to `genotypes/tools/` (if not already present) and uploads it to DNAnexus. Then submits a Swiss Army Knife job that downloads a reference allele frequency TSV (K=6 global ADMIXTURE model: European, East Asian, American, African, South Asian, Oceanian; 135,020 SNPs), extracts matching SNPs from the direct bfile, aligns alleles between the reference and UKBB genotypes (handling allele swaps and strand flips), and produces an aligned bfile + .P frequency matrix. Outputs to `sbayesrc_genotypes/statgen/scrap/`.
+    Downloads the ADMIXTURE binary to `tools/` (if not already present) and uploads it to DNAnexus. Then submits a Swiss Army Knife job that downloads a reference allele frequency TSV (K=6 global ADMIXTURE model: European, East Asian, American, African, South Asian, Oceanian; 135,020 SNPs), extracts matching SNPs from the direct bfile, aligns alleles between the reference and UKBB genotypes (handling allele swaps and strand flips), and produces an aligned bfile + .P frequency matrix. Outputs to `sbayesrc_genotypes/statgen/scrap/`.
 
 20. **Split into ADMIXTURE batches** (`admixture_split_batches.sh`)
     Submits a Swiss Army Knife job that splits the aligned bfile into batches of 20,000 individuals. Creates per-batch bfiles and copies the .P file as `batch_NNN.K.P.in` (the naming convention ADMIXTURE requires for projection mode). Outputs to `sbayesrc_genotypes/statgen/scrap/batches/`.
@@ -151,7 +151,7 @@ This pipeline depends on two companion repositories:
 Run the full pipeline:
 
 ```bash
-bash genotypes/get_genotypes.sh
+bash get_genotypes.sh
 ```
 
 All steps are idempotent — existing outputs are detected and skipped.

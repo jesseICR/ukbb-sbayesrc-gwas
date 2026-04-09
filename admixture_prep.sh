@@ -1,7 +1,7 @@
 #!/bin/bash
 # admixture_prep.sh — Prepare inputs for ADMIXTURE K=6 projection.
 #
-# 1. Downloads ADMIXTURE binary to genotypes/tools/ if not already present
+# 1. Downloads ADMIXTURE binary to tools/ if not already present
 # 2. Uploads ADMIXTURE binary to DNAnexus scrap dir
 # 3. Submits a SAK job that:
 #    a. Downloads reference allele frequency TSV from GitHub

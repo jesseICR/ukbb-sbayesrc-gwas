@@ -2,7 +2,7 @@
 
 Reads the combined alignment CSV (sbayesrc_hg38.csv) containing all chromosomes
 and writes one text file per chromosome (chr1.txt … chr22.txt) into
-genotypes/data/topmed_ids/, each containing colon-delimited variant IDs
+data/topmed_ids/, each containing colon-delimited variant IDs
 (e.g. 1:12345:A:G).
 
 Idempotent: skips chromosomes whose output file already exists.

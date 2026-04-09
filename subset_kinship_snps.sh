@@ -6,7 +6,7 @@
 # and uploads the result to DNAnexus.
 #
 # Output:
-#   Local:  genotypes/data/support/ukbb_500k_qc_pass_direct_kinship_subsetted_snps.txt
+#   Local:  data/support/ukbb_500k_qc_pass_direct_kinship_subsetted_snps.txt
 #   Remote: sbayesrc_genotypes/kinship/ukbb_500k_qc_pass_direct_kinship_subsetted_snps.txt
 #
 # Expects env vars: LOCAL_SNP_QC_FILE, LOCAL_DIRECT_SNPS_FILE,
