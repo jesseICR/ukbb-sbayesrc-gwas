@@ -20,8 +20,8 @@ fi
 
 dx mkdir -p "${DX_MERGE_DIR}"
 
-wgs_psam="/mnt/project/${DX_WGS_PFILE_DIR}/chr1.psam"
-imputed_psam="/mnt/project/${DX_IMPUTED_PFILE_DIR}/chr1.psam"
+wgs_psam="/mnt/project${DX_WGS_PFILE_DIR}/chr1.psam"
+imputed_psam="/mnt/project${DX_IMPUTED_PFILE_DIR}/chr1.psam"
 
 cmd="tail -n +2 '${wgs_psam}' | awk '\$2 > 0 {print \$2}' | sort > wgs_pos.tmp && \
 tail -n +2 '${imputed_psam}' | awk '\$2 > 0 {print \$2}' | sort > imp_pos.tmp && \

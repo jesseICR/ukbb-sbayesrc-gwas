@@ -23,8 +23,8 @@ fi
 
 dx mkdir -p "${DX_ADMIXTURE_BATCH_DIR}"
 
-aligned="/mnt/project/${DX_ADMIXTURE_SCRAP_DIR}/ukb_admixture_aligned"
-p_file="/mnt/project/${DX_ADMIXTURE_SCRAP_DIR}/ref_aligned.P"
+aligned="/mnt/project${DX_ADMIXTURE_SCRAP_DIR}/ukb_admixture_aligned"
+p_file="/mnt/project${DX_ADMIXTURE_SCRAP_DIR}/ref_aligned.P"
 K="${ADMIXTURE_K}"
 BATCH_SIZE="${ADMIXTURE_BATCH_SIZE}"
 

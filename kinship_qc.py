@@ -13,6 +13,7 @@ Outputs (written to working directory for SAK auto-upload):
 """
 
 import math
+import os
 import sys
 
 # ---------------------------------------------------------------------------
@@ -36,9 +37,12 @@ with open("/mnt/project/Bulk/Genotype Results/Genotype calls/ukb_rel.dat") as f:
         }
 print(f"  UKB pairs: {len(ukb):,}")
 
+DX_OUTPUT_DIR = os.environ.get("DX_OUTPUT_DIR", "/sbayesrc_genotypes")
+_BASE = f"/mnt/project{DX_OUTPUT_DIR}"
+
 print("Loading ukb_all_direct_rel.kin0 ...")
 wgs = {}
-with open("/mnt/project/sbayesrc_genotypes/kinship/ukb_all_direct_rel.kin0") as f:
+with open(f"{_BASE}/kinship/ukb_all_direct_rel.kin0") as f:
     f.readline()  # header: #FID1 IID1 FID2 IID2 NSNP HETHET IBS0 KINSHIP
     for line in f:
         parts = line.strip().split("\t")

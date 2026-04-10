@@ -32,7 +32,7 @@ for genotype_type in wgs imputed; do
             continue
         fi
 
-        cmd="cp /mnt/project/${source_dir}/chr${chrom}.pvar chr${chrom}.pvar"
+        cmd="cp /mnt/project${source_dir}/chr${chrom}.pvar chr${chrom}.pvar"
 
         job_id=$(dx run swiss-army-knife \
             -icmd="${cmd}" \

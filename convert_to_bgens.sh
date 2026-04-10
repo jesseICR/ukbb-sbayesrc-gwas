@@ -30,7 +30,7 @@ for chrom in ${CHROMS}; do
         continue
     fi
 
-    pfile="/mnt/project/${DX_MERGED_PFILE_DIR}/chr${chrom}"
+    pfile="/mnt/project${DX_MERGED_PFILE_DIR}/chr${chrom}"
 
     cmd="set -eo pipefail && \
 echo '--- Converting chr${chrom} pfile to BGEN ---' && \

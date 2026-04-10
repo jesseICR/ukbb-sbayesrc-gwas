@@ -29,7 +29,7 @@ dx mkdir -p "${DX_PCA_EUR_DIR}"
 script_id=$(dx upload "${SCRIPT_DIR}/select_pca_europeans.py" \
     --destination "${DX_PCA_EUR_DIR}/" --brief --no-progress)
 
-cmd="set -eo pipefail && \
+cmd="export DX_OUTPUT_DIR='${DX_OUTPUT_DIR}' && set -eo pipefail && \
 echo '--- Selecting PCA European IIDs ---' && \
 python3 select_pca_europeans.py && \
 echo '--- Done ---'"

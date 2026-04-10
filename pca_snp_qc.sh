@@ -22,8 +22,8 @@ fi
 
 dx mkdir -p "${DX_PCA_EUR_DIR}/scrap"
 
-direct_bfile="/mnt/project/${DX_DIRECT_BFILE_DIR}/chr1_22_merged"
-fit_pca_iids="/mnt/project/${DX_PCA_EUR_DIR}/fit_pca_iids.txt"
+direct_bfile="/mnt/project${DX_DIRECT_BFILE_DIR}/chr1_22_merged"
+fit_pca_iids="/mnt/project${DX_PCA_EUR_DIR}/fit_pca_iids.txt"
 
 cmd="set -eo pipefail && \
 echo '=== PCA SNP QC Pipeline ===' && \

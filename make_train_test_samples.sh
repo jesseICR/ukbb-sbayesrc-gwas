@@ -32,7 +32,7 @@ dx mkdir -p "${DX_TRAIN_TEST_DIR}"
 script_id=$(dx upload "${SCRIPT_DIR}/make_train_test_samples.py" \
     --destination "${DX_TRAIN_TEST_DIR}/" --brief --no-progress)
 
-cmd="set -eo pipefail && \
+cmd="export DX_OUTPUT_DIR='${DX_OUTPUT_DIR}' && set -eo pipefail && \
 echo '--- Building train/test sample split ---' && \
 python3 make_train_test_samples.py && \
 echo '--- Done ---'"

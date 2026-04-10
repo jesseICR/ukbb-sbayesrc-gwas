@@ -10,11 +10,11 @@
 #   6. Apply plink2 --king-cutoff-table to get maximal unrelated set
 #
 # Input:
-#   /mnt/project/sbayesrc_genotypes/europeans/classified_european_iids.txt
-#   /mnt/project/sbayesrc_genotypes/kinship/close_relations.csv
-#   /mnt/project/sbayesrc_genotypes/kinship/ukb_all_direct_rel.kin0
-#   /mnt/project/sbayesrc_genotypes/merge_steps/imputed_only_iids.txt
-#   /mnt/project/sbayesrc_genotypes/direct_bfile/chr1_22_merged.{bed,bim,fam}
+#   /mnt/project${DX_OUTPUT_DIR}/europeans/classified_european_iids.txt
+#   /mnt/project${DX_OUTPUT_DIR}/kinship/close_relations.csv
+#   /mnt/project${DX_OUTPUT_DIR}/kinship/ukb_all_direct_rel.kin0
+#   /mnt/project${DX_OUTPUT_DIR}/merge_steps/imputed_only_iids.txt
+#   /mnt/project${DX_OUTPUT_DIR}/direct_bfile/chr1_22_merged.{bed,bim,fam}
 #   UK Biobank field 22006 (extracted via dx extract_dataset)
 #
 # Output:
@@ -27,11 +27,14 @@ import os
 import subprocess
 from collections import defaultdict
 
-EUROPEANS_PATH = "/mnt/project/sbayesrc_genotypes/europeans/classified_european_iids.txt"
-CLOSE_RELATIONS_PATH = "/mnt/project/sbayesrc_genotypes/kinship/close_relations.csv"
-KIN0_PATH = "/mnt/project/sbayesrc_genotypes/kinship/ukb_all_direct_rel.kin0"
-IMPUTED_ONLY_PATH = "/mnt/project/sbayesrc_genotypes/merge_steps/imputed_only_iids.txt"
-DIRECT_BFILE_PREFIX = "/mnt/project/sbayesrc_genotypes/direct_bfile/chr1_22_merged"
+DX_OUTPUT_DIR = os.environ.get("DX_OUTPUT_DIR", "/sbayesrc_genotypes")
+_BASE = f"/mnt/project{DX_OUTPUT_DIR}"
+
+EUROPEANS_PATH = f"{_BASE}/europeans/classified_european_iids.txt"
+CLOSE_RELATIONS_PATH = f"{_BASE}/kinship/close_relations.csv"
+KIN0_PATH = f"{_BASE}/kinship/ukb_all_direct_rel.kin0"
+IMPUTED_ONLY_PATH = f"{_BASE}/merge_steps/imputed_only_iids.txt"
+DIRECT_BFILE_PREFIX = f"{_BASE}/direct_bfile/chr1_22_merged"
 
 KINSHIP_THRESHOLD = 0.0441941  # 0.5^(9/2), lower bound for 3rd-degree relatives
 

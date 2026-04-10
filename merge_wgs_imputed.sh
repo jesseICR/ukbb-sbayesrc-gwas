@@ -52,12 +52,12 @@ for chrom in $(seq 1 22); do
 
     dx mkdir -p "${dest}"
 
-    wgs_pvar="/mnt/project/${DX_WGS_PFILE_DIR}/chr${chrom}.pvar"
-    imp_pvar="/mnt/project/${DX_IMPUTED_PFILE_DIR}/chr${chrom}.pvar"
-    wgs_pfile="/mnt/project/${DX_WGS_PFILE_DIR}/chr${chrom}"
-    imp_pfile="/mnt/project/${DX_IMPUTED_PFILE_DIR}/chr${chrom}"
-    keep_wgs="/mnt/project/${DX_MERGE_DIR}/wgs_positive_iids.txt"
-    keep_imp="/mnt/project/${DX_MERGE_DIR}/imputed_only_iids.txt"
+    wgs_pvar="/mnt/project${DX_WGS_PFILE_DIR}/chr${chrom}.pvar"
+    imp_pvar="/mnt/project${DX_IMPUTED_PFILE_DIR}/chr${chrom}.pvar"
+    wgs_pfile="/mnt/project${DX_WGS_PFILE_DIR}/chr${chrom}"
+    imp_pfile="/mnt/project${DX_IMPUTED_PFILE_DIR}/chr${chrom}"
+    keep_wgs="/mnt/project${DX_MERGE_DIR}/wgs_positive_iids.txt"
+    keep_imp="/mnt/project${DX_MERGE_DIR}/imputed_only_iids.txt"
 
     cmd="set -eo pipefail && \
 \
@@ -164,7 +164,7 @@ for chrom in $(seq 1 22); do
         continue
     fi
 
-    bfile_dir="/mnt/project/${DX_MERGE_DIR}/bfiles/merge_chr${chrom}"
+    bfile_dir="/mnt/project${DX_MERGE_DIR}/bfiles/merge_chr${chrom}"
 
     cmd="set -eo pipefail && \
 plink2 --bfile '${bfile_dir}/chr${chrom}' --make-pgen --out chr${chrom} && \

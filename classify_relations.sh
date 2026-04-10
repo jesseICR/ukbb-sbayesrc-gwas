@@ -7,8 +7,8 @@
 #   3. Joins with birth data, adds fractional year-of-birth columns
 #   4. Filters out pairs with large age gap + low IBS0
 #
-# Output:       sbayesrc_genotypes/kinship/close_relations.csv
-# Intermediate: sbayesrc_genotypes/kinship/yob_calc/birth_year_month.csv
+# Output:       ${DX_KINSHIP_DIR}/close_relations.csv
+# Intermediate: ${DX_KINSHIP_DIR}/yob_calc/birth_year_month.csv
 #
 # Expects env vars: DX_KINSHIP_DIR, INSTANCE_TYPE, DX_PRIORITY
 
@@ -26,7 +26,7 @@ fi
 script_id=$(dx upload "${SCRIPT_DIR}/classify_relations.py" \
     --destination "${DX_KINSHIP_DIR}/" --brief --no-progress)
 
-cmd="set -eo pipefail && \
+cmd="export DX_OUTPUT_DIR='${DX_OUTPUT_DIR}' && set -eo pipefail && \
 echo '--- Classifying and filtering close relationships ---' && \
 python3 classify_relations.py && \
 echo '--- Saving intermediate files ---' && \

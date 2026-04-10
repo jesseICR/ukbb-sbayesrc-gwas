@@ -41,8 +41,8 @@ for chrom in ${CHROMS}; do
         continue
     fi
 
-    pfile="/mnt/project/${DX_MERGED_PFILE_DIR}/chr${chrom}"
-    snps="/mnt/project/${DX_DIRECT_SNPS_FILE}"
+    pfile="/mnt/project${DX_MERGED_PFILE_DIR}/chr${chrom}"
+    snps="/mnt/project${DX_DIRECT_SNPS_FILE}"
 
     cmd="set -eo pipefail && \
 echo '--- Extracting direct SNPs for chr${chrom} ---' && \

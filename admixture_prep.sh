@@ -59,7 +59,7 @@ script_id=$(dx upload "${SCRIPT_DIR}/admixture_align_alleles.py" \
     --destination "${DX_ADMIXTURE_SCRAP_DIR}/" --brief --no-progress)
 
 # ---- Build and submit SAK job ----
-bfile="/mnt/project/${DX_DIRECT_BFILE_DIR}/chr1_22_merged"
+bfile="/mnt/project${DX_DIRECT_BFILE_DIR}/chr1_22_merged"
 
 cmd="set -eo pipefail && \
 echo '--- Downloading reference allele frequencies ---' && \

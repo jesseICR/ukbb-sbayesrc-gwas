@@ -14,9 +14,9 @@
 #      Final test      = secondary test (unchanged)
 #
 # Input:
-#   /mnt/project/sbayesrc_genotypes/europeans/classified_european_iids.txt
-#   /mnt/project/sbayesrc_genotypes/kinship/close_relations.csv
-#   /mnt/project/sbayesrc_genotypes/kinship/ukb_all_direct_rel.kin0
+#   /mnt/project${DX_OUTPUT_DIR}/europeans/classified_european_iids.txt
+#   /mnt/project${DX_OUTPUT_DIR}/kinship/close_relations.csv
+#   /mnt/project${DX_OUTPUT_DIR}/kinship/ukb_all_direct_rel.kin0
 #   UK Biobank field 22006 (extracted via dx extract_dataset)
 #
 # Output:
@@ -30,15 +30,16 @@ import os
 import subprocess
 from collections import defaultdict
 
-EUROPEANS_PATH = "/mnt/project/sbayesrc_genotypes/europeans/classified_european_iids.txt"
-CLOSE_RELATIONS_PATH = "/mnt/project/sbayesrc_genotypes/kinship/close_relations.csv"
-KIN0_PATH = "/mnt/project/sbayesrc_genotypes/kinship/ukb_all_direct_rel.kin0"
+DX_OUTPUT_DIR = os.environ.get("DX_OUTPUT_DIR", "/sbayesrc_genotypes")
+_BASE = f"/mnt/project{DX_OUTPUT_DIR}"
+
+EUROPEANS_PATH = f"{_BASE}/europeans/classified_european_iids.txt"
+CLOSE_RELATIONS_PATH = f"{_BASE}/kinship/close_relations.csv"
+KIN0_PATH = f"{_BASE}/kinship/ukb_all_direct_rel.kin0"
 
 KINSHIP_THRESHOLD = 0.0441941  # 0.5^(9/2), lower bound for 3rd-degree relatives
 
 DATASET_NAME_GLOB = "app*.dataset"
-
-TRAIN_TEST_DIR = "sbayesrc_genotypes/train_test"
 
 TRAIN_OUTPUT = "final_train_iids.txt"
 TEST_OUTPUT = "final_test_iids.txt"

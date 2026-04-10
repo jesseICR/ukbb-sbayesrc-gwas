@@ -6,7 +6,7 @@
 # match the WGS variant counts from the per-chromosome merge logs
 # (tolerance: ≤100 fewer).
 #
-# Uploads a QC log to sbayesrc_genotypes/merge_steps/pfile_merge_log.txt.
+# Uploads a QC log to ${DX_MERGE_DIR}/pfile_merge_log.txt.
 #
 # Expects env vars: DX_MERGE_DIR, DX_MERGED_PFILE_DIR
 

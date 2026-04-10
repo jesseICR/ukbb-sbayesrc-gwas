@@ -9,8 +9,8 @@ Algorithm:
   6. Write sex_covar.txt with coding: 0=female, 1=male
 
 Input:
-  /mnt/project/sbayesrc_genotypes/direct_bfile/chr1_22_merged.fam
-  /mnt/project/sbayesrc_genotypes/merge_steps/imputed_only_iids.txt
+  /mnt/project${DX_OUTPUT_DIR}/direct_bfile/chr1_22_merged.fam
+  /mnt/project${DX_OUTPUT_DIR}/merge_steps/imputed_only_iids.txt
   UKBB fields: participant.p22001, participant.p22019
 
 Output (auto-uploaded by SAK):
@@ -25,8 +25,12 @@ import subprocess
 import sys
 
 DATASET_NAME_GLOB = "app*.dataset"
-FAM_PATH = "/mnt/project/sbayesrc_genotypes/direct_bfile/chr1_22_merged.fam"
-IMPUTED_ONLY_PATH = "/mnt/project/sbayesrc_genotypes/merge_steps/imputed_only_iids.txt"
+
+DX_OUTPUT_DIR = os.environ.get("DX_OUTPUT_DIR", "/sbayesrc_genotypes")
+_BASE = f"/mnt/project{DX_OUTPUT_DIR}"
+
+FAM_PATH = f"{_BASE}/direct_bfile/chr1_22_merged.fam"
+IMPUTED_ONLY_PATH = f"{_BASE}/merge_steps/imputed_only_iids.txt"
 EXTRACT_PATH = "ukb_sex_fields.csv"
 OUTPUT_PATH = "sex_covar.txt"
 README_PATH = "readme.txt"

@@ -21,7 +21,7 @@ fi
 
 dx mkdir -p "${DX_EUROPEANS_DIR}"
 
-tsv="/mnt/project/${DX_STATGEN_DIR}/ukb_admixture_k6.tsv"
+tsv="/mnt/project${DX_STATGEN_DIR}/ukb_admixture_k6.tsv"
 
 cmd="set -eo pipefail && \
 echo '--- Classifying European ancestry individuals ---' && \

@@ -32,7 +32,7 @@ dx mkdir -p "${DX_GENETIC_SEX_DIR}"
 script_id=$(dx upload "${SCRIPT_DIR}/get_genetic_sex.py" \
     --destination "${DX_GENETIC_SEX_DIR}/" --brief --no-progress)
 
-cmd="set -eo pipefail && \
+cmd="export DX_OUTPUT_DIR='${DX_OUTPUT_DIR}' && set -eo pipefail && \
 echo '--- Building genetic sex covariate file ---' && \
 python3 get_genetic_sex.py && \
 echo '--- Done ---'"

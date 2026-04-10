@@ -45,8 +45,8 @@ batch_names=$(dx ls "${DX_ADMIXTURE_BATCH_DIR}/" 2>/dev/null \
 n_batches=$(echo "${batch_names}" | wc -l)
 echo "  Found ${n_batches} batches"
 
-admixture_bin="/mnt/project/${DX_ADMIXTURE_SCRAP_DIR}/admixture"
-batch_dir="/mnt/project/${DX_ADMIXTURE_BATCH_DIR}"
+admixture_bin="/mnt/project${DX_ADMIXTURE_SCRAP_DIR}/admixture"
+batch_dir="/mnt/project${DX_ADMIXTURE_BATCH_DIR}"
 
 submitted=0
 job_ids=()
@@ -87,7 +87,7 @@ echo "  All ADMIXTURE jobs complete."
 # ---- Phase 2: Concatenate results into final TSV ----
 echo "  Concatenating results ..."
 
-fam="/mnt/project/${DX_ADMIXTURE_SCRAP_DIR}/ukb_admixture_aligned.fam"
+fam="/mnt/project${DX_ADMIXTURE_SCRAP_DIR}/ukb_admixture_aligned.fam"
 
 cmd="set -eo pipefail && \
 echo '--- Concatenating ADMIXTURE results ---' && \

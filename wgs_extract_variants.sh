@@ -21,7 +21,7 @@ for chrom in $(seq 1 22); do
     fi
 
     plink_prefix="${WGS_PLINK_DIR}/ukb24308_c${chrom}_b0_v1"
-    variant_file="/mnt/project/${DX_DRAGEN_ID_DIR}/chr${chrom}.txt"
+    variant_file="/mnt/project${DX_DRAGEN_ID_DIR}/chr${chrom}.txt"
 
     cmd="plink2 \
   --pfile '${plink_prefix}' \

@@ -22,8 +22,8 @@ fi
 
 dx mkdir -p "${DX_KINSHIP_DIR}"
 
-bfile="/mnt/project/${DX_DIRECT_BFILE_DIR}/chr1_22_merged"
-snps="/mnt/project/${DX_KINSHIP_SNPS_FILE}"
+bfile="/mnt/project${DX_DIRECT_BFILE_DIR}/chr1_22_merged"
+snps="/mnt/project${DX_KINSHIP_SNPS_FILE}"
 
 cmd="set -eo pipefail && \
 echo '--- Running KING kinship estimation ---' && \

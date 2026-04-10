@@ -22,7 +22,7 @@ for chrom in $(seq 1 22); do
 
     bgen_in="${IMPUTED_BGEN_DIR}/ukb21007_c${chrom}_b0_v1.bgen"
     sample_in="${IMPUTED_BGEN_DIR}/ukb21007_c${chrom}_b0_v1.sample"
-    snp_list="/mnt/project/${DX_TOPMED_ID_DIR}/chr${chrom}.txt"
+    snp_list="/mnt/project${DX_TOPMED_ID_DIR}/chr${chrom}.txt"
 
     cmd="plink2 --bgen '${bgen_in}' ref-first \
   --sample '${sample_in}' \

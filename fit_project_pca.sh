@@ -21,8 +21,8 @@ fi
 
 dx mkdir -p "${DX_PCA_EUR_DIR}/scrap"
 
-pca_bfile="/mnt/project/${DX_PCA_EUR_DIR}/pca_ready"
-direct_bfile="/mnt/project/${DX_DIRECT_BFILE_DIR}/chr1_22_merged"
+pca_bfile="/mnt/project${DX_PCA_EUR_DIR}/pca_ready"
+direct_bfile="/mnt/project${DX_DIRECT_BFILE_DIR}/chr1_22_merged"
 
 cmd="set -eo pipefail && \
 echo '=== PCA Fitting & Projection ===' && \

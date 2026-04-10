@@ -50,28 +50,33 @@ export LOCAL_DRAGEN_ID_DIR="${SCRIPT_DIR}/data/dragen_ids"
 export LOCAL_TOPMED_ID_DIR="${SCRIPT_DIR}/data/topmed_ids"
 export ALIGNMENT_FILE="${SCRIPT_DIR}/data/support/sbayesrc_hg38.csv"
 
-# DNAnexus paths
-export DX_DRAGEN_ID_DIR="sbayesrc_genotypes/dragen_ids"
-export DX_WGS_PFILE_DIR="sbayesrc_genotypes/wgs_pfiles"
+# DNAnexus output directory — all pipeline output lives here.
+# Change this to write output to a different location. Must start with "/".
+# Inside SAK job commands, files are accessed at /mnt/project${DX_OUTPUT_DIR}/...
+export DX_OUTPUT_DIR="/sbayesrc_genotypes"
+
+# DNAnexus paths (all derived from DX_OUTPUT_DIR)
+export DX_DRAGEN_ID_DIR="${DX_OUTPUT_DIR}/dragen_ids"
+export DX_WGS_PFILE_DIR="${DX_OUTPUT_DIR}/wgs_pfiles"
 export WGS_PLINK_DIR="/mnt/project/Bulk/DRAGEN WGS/DRAGEN population level WGS variants, PLINK format [500k release]"
-export DX_TOPMED_ID_DIR="sbayesrc_genotypes/topmed_ids"
-export DX_IMPUTED_PFILE_DIR="sbayesrc_genotypes/imputed_pfiles"
-export DX_BACKUP_DIR="sbayesrc_genotypes/backups"
-export DX_MERGE_DIR="sbayesrc_genotypes/merge_steps"
-export DX_MERGED_PFILE_DIR="sbayesrc_genotypes/merged_pfiles"
-export DX_MERGED_BGEN_DIR="sbayesrc_genotypes/merged_bgens"
+export DX_TOPMED_ID_DIR="${DX_OUTPUT_DIR}/topmed_ids"
+export DX_IMPUTED_PFILE_DIR="${DX_OUTPUT_DIR}/imputed_pfiles"
+export DX_BACKUP_DIR="${DX_OUTPUT_DIR}/backups"
+export DX_MERGE_DIR="${DX_OUTPUT_DIR}/merge_steps"
+export DX_MERGED_PFILE_DIR="${DX_OUTPUT_DIR}/merged_pfiles"
+export DX_MERGED_BGEN_DIR="${DX_OUTPUT_DIR}/merged_bgens"
 export MERGE_INSTANCE_TYPE="mem2_ssd1_v2_x16"  # merge jobs; increase for larger chromosomes
 export IMPUTED_BGEN_DIR="/mnt/project/Bulk/Imputation/Imputation from genotype (TOPmed)"
-export DX_DIRECT_PFILE_DIR="sbayesrc_genotypes/direct_pfiles"
-export DX_DIRECT_BFILE_DIR="sbayesrc_genotypes/direct_bfile"
+export DX_DIRECT_PFILE_DIR="${DX_OUTPUT_DIR}/direct_pfiles"
+export DX_DIRECT_BFILE_DIR="${DX_OUTPUT_DIR}/direct_bfile"
 export LOCAL_DIRECT_SNPS_FILE="${SCRIPT_DIR}/data/support/direct_snps/ukbb_500k_qc_pass_direct_snps.txt"
-export DX_DIRECT_SNPS_FILE="sbayesrc_genotypes/ukbb_500k_qc_pass_direct_snps.txt"
+export DX_DIRECT_SNPS_FILE="${DX_OUTPUT_DIR}/ukbb_500k_qc_pass_direct_snps.txt"
 
 # Kinship estimation
 export LOCAL_KINSHIP_SNPS_FILE="${SCRIPT_DIR}/data/support/ukbb_500k_qc_pass_direct_kinship_subsetted_snps.txt"
 export LOCAL_SNP_QC_FILE="${SCRIPT_DIR}/data/support/ukb_snp_qc.txt"
-export DX_KINSHIP_DIR="sbayesrc_genotypes/kinship"
-export DX_KINSHIP_SNPS_FILE="sbayesrc_genotypes/kinship/ukbb_500k_qc_pass_direct_kinship_subsetted_snps.txt"
+export DX_KINSHIP_DIR="${DX_OUTPUT_DIR}/kinship"
+export DX_KINSHIP_SNPS_FILE="${DX_OUTPUT_DIR}/kinship/ukbb_500k_qc_pass_direct_kinship_subsetted_snps.txt"
 export KINSHIP_INSTANCE_TYPE="mem2_ssd1_v2_x64"
 
 # ADMIXTURE K=6 projection
@@ -79,23 +84,23 @@ export ADMIXTURE_TSV_URL="https://raw.githubusercontent.com/jesseICR/public-stat
 export ADMIXTURE_DOWNLOAD_URL="https://dalexander.github.io/admixture/binaries/admixture_linux-1.3.0.tar.gz"
 export ADMIXTURE_K=6
 export ADMIXTURE_BATCH_SIZE=20000
-export DX_STATGEN_DIR="sbayesrc_genotypes/statgen"
-export DX_ADMIXTURE_SCRAP_DIR="sbayesrc_genotypes/statgen/scrap"
-export DX_ADMIXTURE_BATCH_DIR="sbayesrc_genotypes/statgen/scrap/batches"
+export DX_STATGEN_DIR="${DX_OUTPUT_DIR}/statgen"
+export DX_ADMIXTURE_SCRAP_DIR="${DX_OUTPUT_DIR}/statgen/scrap"
+export DX_ADMIXTURE_BATCH_DIR="${DX_OUTPUT_DIR}/statgen/scrap/batches"
 export ADMIXTURE_INSTANCE_TYPE="mem2_ssd1_v2_x2"
 export ADMIXTURE_PREP_INSTANCE_TYPE="mem2_ssd1_v2_x16"
 
 # European ancestry classification
-export DX_EUROPEANS_DIR="sbayesrc_genotypes/europeans"
+export DX_EUROPEANS_DIR="${DX_OUTPUT_DIR}/europeans"
 
 # Train/test sample split
-export DX_TRAIN_TEST_DIR="sbayesrc_genotypes/train_test"
+export DX_TRAIN_TEST_DIR="${DX_OUTPUT_DIR}/train_test"
 
 # PCA European sample selection
-export DX_PCA_EUR_DIR="sbayesrc_genotypes/pca_eur"
+export DX_PCA_EUR_DIR="${DX_OUTPUT_DIR}/pca_eur"
 
 # Genetic sex covariate
-export DX_GENETIC_SEX_DIR="sbayesrc_genotypes/genetic_sex"
+export DX_GENETIC_SEX_DIR="${DX_OUTPUT_DIR}/genetic_sex"
 
 # ---------------------------------------------------------------------------
 # Setup: Download SBayesRC alignment file (if not already cached)

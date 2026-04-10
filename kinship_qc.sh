@@ -28,7 +28,7 @@ dx mkdir -p "${DX_KINSHIP_DIR}/qc"
 script_id=$(dx upload "${SCRIPT_DIR}/kinship_qc.py" \
     --destination "${DX_KINSHIP_DIR}/qc/" --brief --no-progress)
 
-cmd="set -eo pipefail && \
+cmd="export DX_OUTPUT_DIR='${DX_OUTPUT_DIR}' && set -eo pipefail && \
 echo '--- Kinship QC: comparing WGS KING results against UKB ---' && \
 pip install matplotlib > /dev/null 2>&1 || true && \
 python3 kinship_qc.py && \

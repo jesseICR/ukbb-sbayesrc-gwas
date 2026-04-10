@@ -20,7 +20,7 @@ fi
 
 dx mkdir -p "${DX_DIRECT_BFILE_DIR}"
 
-input_dir="/mnt/project/${DX_DIRECT_PFILE_DIR}"
+input_dir="/mnt/project${DX_DIRECT_PFILE_DIR}"
 
 cmd="set -eo pipefail && \
 echo '--- Creating merge list ---' && \

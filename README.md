@@ -4,7 +4,7 @@ Prepare UK Biobank genotypes for GWAS of ~7 million [SBayesRC](https://github.co
 
 ## Overview
 
-This pipeline extracts ~7 million SBayesRC variant genotypes from UK Biobank [DRAGEN WGS](https://biobank.ndph.ox.ac.uk/ukb/label.cgi?id=185) data, prepares sample QC covariates (kinship, ancestry, PCA, genetic sex), and builds the REGENIE-ready genotype files — all within a single `sbayesrc_genotypes/` directory on your DNAnexus project. It runs locally for lightweight data preparation, then submits jobs to DNAnexus for extraction, merging, and analysis. See [`get_genotypes.sh`](get_genotypes.sh) for the full pipeline orchestration and configuration.
+This pipeline extracts ~7 million SBayesRC variant genotypes from UK Biobank [DRAGEN WGS](https://biobank.ndph.ox.ac.uk/ukb/label.cgi?id=185) data, prepares sample QC covariates (kinship, ancestry, PCA, genetic sex), and builds the REGENIE-ready genotype files — all within a single output directory on your DNAnexus project. It runs locally for lightweight data preparation, then submits jobs to DNAnexus for extraction, merging, and analysis. See [`get_genotypes.sh`](get_genotypes.sh) for the full pipeline orchestration and configuration.
 
 The pipeline produces a training and test set of individuals genetically classified as majority European ancestry via ADMIXTURE K=6 projection. The test set is a subset of [White British](https://biobank.ndph.ox.ac.uk/ukb/field.cgi?id=22006) siblings. No individuals in the training cohort are related to individuals in the testing cohort above a KING kinship coefficient of 0.0442 (the lower bound of relatedness for third-degree relatives). Individuals with [sex chromosome aneuploidy](https://biobank.ctsu.ox.ac.uk/ukb/field.cgi?id=22019) are excluded from both cohorts. Because DRAGEN WGS includes approximately 5,000 individuals who were not previously genotyped by the UK Biobank, KING kinship is recomputed as part of this pipeline using a subset of the QC SNPs that the UK Biobank used to compute relatedness ([Bycroft et al. 2018](https://www.nature.com/articles/s41586-018-0579-z)). Principal components are fit on European training-set individuals unrelated to all White British siblings, then projected onto the training and testing cohorts for use as covariates in GWAS and PRS validation, respectively.
 
@@ -21,9 +21,13 @@ The pipeline reads from two sources on your DNAnexus project (both are standard 
 
 ### What the pipeline writes
 
-All output files are written to a single directory: **`sbayesrc_genotypes/`** in the root of your DNAnexus project. No other directories are created or modified.
+All output files are written to a single directory on your DNAnexus project, controlled by `DX_OUTPUT_DIR` in [`get_genotypes.sh`](get_genotypes.sh). By default this is `/sbayesrc_genotypes`. To write output elsewhere, change `DX_OUTPUT_DIR` — all paths are derived from it automatically. No other directories are created or modified.
 
-**Important:** Your project must not already have a `sbayesrc_genotypes/` directory (i.e., `/mnt/project/sbayesrc_genotypes/` must not exist). If it does, rename or remove it before running the pipeline.
+All DNAnexus paths are absolute (prefixed with `/`), so the pipeline works regardless of your `dx` CLI working directory.
+
+**Important:** Your project must not already have a directory at the configured `DX_OUTPUT_DIR` path (i.e., `/mnt/project/sbayesrc_genotypes/` must not exist if using the default). If it does, rename or remove it before running the pipeline.
+
+Throughout this document, `$DX_OUTPUT_DIR` refers to the configured output directory (default: `/sbayesrc_genotypes`).
 
 ### Merging WGS and imputed-only individuals
 
@@ -45,10 +49,10 @@ This pipeline depends on two companion repositories:
    Reads the alignment CSV (`data/support/sbayesrc_hg38.csv`) and writes per-chromosome variant ID files to `data/dragen_ids/chr{1..22}.txt` (git-ignored). Each ID has the format `DRAGEN:chr{chrom}:{pos}:{ref}:{alt}`.
 
 2. **Upload DRAGEN IDs to DNAnexus** (`upload_dragen_ids.sh`)
-   Uploads the 22 chromosome ID files to `sbayesrc_genotypes/dragen_ids/` on DNAnexus. Skips files that already exist.
+   Uploads the 22 chromosome ID files to `$DX_OUTPUT_DIR/dragen_ids/` on DNAnexus. Skips files that already exist.
 
 3. **Extract WGS variants from PLINK files** (`wgs_extract_variants.sh`)
-   Submits 22 parallel Swiss Army Knife jobs on DNAnexus (one per chromosome). Each job runs `plink2` to extract the selected variants from the UKBB DRAGEN WGS PLINK files, applying QC filters (missingness < 3%, MAC > 1000, PASS variants only). Outputs are stored in `sbayesrc_genotypes/wgs_pfiles/` on DNAnexus.
+   Submits 22 parallel Swiss Army Knife jobs on DNAnexus (one per chromosome). Each job runs `plink2` to extract the selected variants from the UKBB DRAGEN WGS PLINK files, applying QC filters (missingness < 3%, MAC > 1000, PASS variants only). Outputs are stored in `$DX_OUTPUT_DIR/wgs_pfiles/` on DNAnexus.
 
 **Imputed (TOPMed)**
 
@@ -56,15 +60,15 @@ This pipeline depends on two companion repositories:
    Reads the same alignment CSV and writes per-chromosome colon-delimited variant ID files to `data/topmed_ids/chr{1..22}.txt` (git-ignored). Each ID has the format `{chrom}:{pos}:{ref}:{alt}`.
 
 5. **Upload TopMed IDs to DNAnexus** (`upload_topmed_ids.sh`)
-   Uploads the 22 chromosome ID files to `sbayesrc_genotypes/topmed_ids/` on DNAnexus. Skips files that already exist.
+   Uploads the 22 chromosome ID files to `$DX_OUTPUT_DIR/topmed_ids/` on DNAnexus. Skips files that already exist.
 
 6. **Extract imputed variants from BGEN files** (`imputed_extract_variants.sh`)
-   Submits 22 parallel Swiss Army Knife jobs on DNAnexus (one per chromosome). Each job runs `plink2` to extract the selected variants from the UKBB TOPMed-imputed BGEN files. Outputs are stored in `sbayesrc_genotypes/imputed_pfiles/` on DNAnexus.
+   Submits 22 parallel Swiss Army Knife jobs on DNAnexus (one per chromosome). Each job runs `plink2` to extract the selected variants from the UKBB TOPMed-imputed BGEN files. Outputs are stored in `$DX_OUTPUT_DIR/imputed_pfiles/` on DNAnexus.
 
 **Pvar standardization**
 
 7. **Back up original pvar files** (`backup_pvars.sh`)
-   Copies the original WGS and imputed pvar files on DNAnexus to `sbayesrc_genotypes/backups/wgs_pvars/` and `sbayesrc_genotypes/backups/imputed_pvars/`. Skips files that already have backups.
+   Copies the original WGS and imputed pvar files on DNAnexus to `$DX_OUTPUT_DIR/backups/wgs_pvars/` and `$DX_OUTPUT_DIR/backups/imputed_pvars/`. Skips files that already have backups.
 
 8. **Standardize pvar files** (`standardize_pvars.sh` + `standardize_pvar.py`)
    Downloads each pvar locally, maps variant IDs to rsids using the alignment CSVs, and trims to the 5 core columns (`#CHROM`, `POS`, `ID`, `REF`, `ALT`). Uploads the standardized pvar back to DNAnexus and deletes the local copy. Pvar files contain only variant metadata (not individual-level data), so downloading them locally is safe and consistent with DNAnexus data governance conventions.
@@ -72,79 +76,79 @@ This pipeline depends on two companion repositories:
 **Merge**
 
 9. **Find imputed-only IIDs** (`find_imputed_only_iids.sh`)
-   Submits a Swiss Army Knife job that compares WGS and imputed psam files to identify individuals present in the imputed data but absent from WGS. Filters out negative (redacted) IIDs. Outputs a two-column FID/IID file to `sbayesrc_genotypes/merge_steps/imputed_only_iids.txt`.
+   Submits a Swiss Army Knife job that compares WGS and imputed psam files to identify individuals present in the imputed data but absent from WGS. Filters out negative (redacted) IIDs. Outputs a two-column FID/IID file to `$DX_OUTPUT_DIR/merge_steps/imputed_only_iids.txt`.
 
 10. **Merge WGS + imputed-only individuals** (`merge_wgs_imputed.sh`)
-    For each chromosome, submits a Swiss Army Knife job that: (a) finds common variants between WGS and imputed pvars by matching on ID + REF + ALT; (b) extracts a WGS bfile with common variants (all WGS samples); (c) extracts an imputed bfile with common variants (imputed-only IIDs only); (d) merges the two bfiles using plink1 `--bmerge` with trial-merge + missnp handling. Intermediate bfiles and merge logs are stored in `sbayesrc_genotypes/merge_steps/bfiles/merge_chr{N}/`. Then converts each merged bfile to a pfile in `sbayesrc_genotypes/merged_pfiles/`.
+    For each chromosome, submits a Swiss Army Knife job that: (a) finds common variants between WGS and imputed pvars by matching on ID + REF + ALT; (b) extracts a WGS bfile with common variants (all WGS samples); (c) extracts an imputed bfile with common variants (imputed-only IIDs only); (d) merges the two bfiles using plink1 `--bmerge` with trial-merge + missnp handling. Intermediate bfiles and merge logs are stored in `$DX_OUTPUT_DIR/merge_steps/bfiles/merge_chr{N}/`. Then converts each merged bfile to a pfile in `$DX_OUTPUT_DIR/merged_pfiles/`.
 
 **QC**
 
 11. **Validate merged pfiles** (`validate_merged_pfiles.sh`)
-    Checks that all 22 merged psam files have the expected sample count (WGS + imputed-only IIDs) and that variant counts in each merged pvar match the WGS variant counts from the per-chromosome merge logs (tolerance: ≤100 fewer). Uploads a QC log to `sbayesrc_genotypes/merge_steps/pfile_merge_log.txt`.
+    Checks that all 22 merged psam files have the expected sample count (WGS + imputed-only IIDs) and that variant counts in each merged pvar match the WGS variant counts from the per-chromosome merge logs (tolerance: ≤100 fewer). Uploads a QC log to `$DX_OUTPUT_DIR/merge_steps/pfile_merge_log.txt`.
 
 **BGEN conversion (for REGENIE step 2)**
 
 12. **Convert merged pfiles to BGEN** (`convert_to_bgens.sh`)
-    Submits 22 parallel Swiss Army Knife jobs on DNAnexus (one per chromosome). Each job runs `plink2` to export the merged pfile to BGEN v1.2 format (8-bit dosage, ref-first), then indexes the BGEN with `bgenix`. Outputs are stored in `sbayesrc_genotypes/merged_bgens/` (`.bgen`, `.bgen.bgi`, `.sample`, `.log` per chromosome). These per-chromosome BGENs are used as the genetic data input for REGENIE step 2 (association testing).
+    Submits 22 parallel Swiss Army Knife jobs on DNAnexus (one per chromosome). Each job runs `plink2` to export the merged pfile to BGEN v1.2 format (8-bit dosage, ref-first), then indexes the BGEN with `bgenix`. Outputs are stored in `$DX_OUTPUT_DIR/merged_bgens/` (`.bgen`, `.bgen.bgi`, `.sample`, `.log` per chromosome). These per-chromosome BGENs are used as the genetic data input for REGENIE step 2 (association testing).
 
 **Direct SNP bfile (for REGENIE step 1)**
 
 13. **Extract direct SNPs per chromosome** (`extract_direct_snps.sh`)
-    Uploads the direct SNP list (`data/support/direct_snps/ukbb_500k_qc_pass_direct_snps.txt`, ~500k rsids) to DNAnexus, then submits 22 parallel Swiss Army Knife jobs (one per chromosome). Each job runs plink2 `--extract` to subset the merged pfile to directly genotyped SNPs. Outputs are stored in `sbayesrc_genotypes/direct_pfiles/` (.pgen/.pvar/.psam per chromosome).
+    Uploads the direct SNP list (`data/support/direct_snps/ukbb_500k_qc_pass_direct_snps.txt`, ~500k rsids) to DNAnexus, then submits 22 parallel Swiss Army Knife jobs (one per chromosome). Each job runs plink2 `--extract` to subset the merged pfile to directly genotyped SNPs. Outputs are stored in `$DX_OUTPUT_DIR/direct_pfiles/` (.pgen/.pvar/.psam per chromosome).
 
 14. **Merge direct-SNP pfiles into bfile** (`make_direct_bfile.sh`)
-    Submits a Swiss Army Knife job that uses plink2 `--pmerge-list` to merge the 22 per-chromosome direct-SNP pfiles into a single bfile at `sbayesrc_genotypes/direct_bfile/chr1_22_merged` (.bed/.bim/.fam). This bfile of directly genotyped SNPs is used as the input for REGENIE step 1 (whole-genome ridge regression).
+    Submits a Swiss Army Knife job that uses plink2 `--pmerge-list` to merge the 22 per-chromosome direct-SNP pfiles into a single bfile at `$DX_OUTPUT_DIR/direct_bfile/chr1_22_merged` (.bed/.bim/.fam). This bfile of directly genotyped SNPs is used as the input for REGENIE step 1 (whole-genome ridge regression).
 
 **Kinship estimation (for sample QC)**
 
 15. **Subset direct SNPs to kinship-relevant SNPs** (`subset_kinship_snps.sh`)
-    Downloads the UK Biobank SNP QC file (`ukb_snp_qc.txt`), filters to SNPs where `in_Relatedness == 1` (the SNPs used by Bycroft et al. to compute kinship), and intersects with the QC-pass direct SNP list to produce ~85,681 kinship-relevant SNPs. Uploads the subset to `sbayesrc_genotypes/kinship/` on DNAnexus.
+    Downloads the UK Biobank SNP QC file (`ukb_snp_qc.txt`), filters to SNPs where `in_Relatedness == 1` (the SNPs used by Bycroft et al. to compute kinship), and intersects with the QC-pass direct SNP list to produce ~85,681 kinship-relevant SNPs. Uploads the subset to `$DX_OUTPUT_DIR/kinship/` on DNAnexus.
 
 16. **Run KING kinship estimation** (`run_king_kinship.sh`)
-    Submits a Swiss Army Knife job that runs plink2 `--make-king-table` on the direct bfile, extracting only the kinship-relevant SNP subset via `--extract`. Uses `--king-table-filter 0.03` to capture pairs near the standard relatedness threshold. Outputs `ukb_all_direct_rel.kin0` to `sbayesrc_genotypes/kinship/`.
+    Submits a Swiss Army Knife job that runs plink2 `--make-king-table` on the direct bfile, extracting only the kinship-relevant SNP subset via `--extract`. Uses `--king-table-filter 0.03` to capture pairs near the standard relatedness threshold. Outputs `ukb_all_direct_rel.kin0` to `$DX_OUTPUT_DIR/kinship/`.
 
 17. **QC kinship** (`kinship_qc.sh` + `kinship_qc.py`)
-    Compares our KING kinship output against UKB's `ukb_rel.dat` reference, producing summary statistics (mean/median/percentile absolute differences, Pearson correlation, pair counts by kinship bin) and diagnostic plots (scatter, Bland-Altman) for both kinship coefficients and IBS0 values. Outputs to `sbayesrc_genotypes/kinship/qc/`.
+    Compares our KING kinship output against UKB's `ukb_rel.dat` reference, producing summary statistics (mean/median/percentile absolute differences, Pearson correlation, pair counts by kinship bin) and diagnostic plots (scatter, Bland-Altman) for both kinship coefficients and IBS0 values. Outputs to `$DX_OUTPUT_DIR/kinship/qc/`.
 
 18. **Classify close relationships** (`classify_relations.sh` + `classify_relations.py`)
-    Filters the KING kinship output to close relationships (kinship >= 0.1767) and classifies each pair as `sibling`, `parent_child`, or `identical` (twins/duplicates) using kinship coefficient and IBS0 thresholds from Bycroft et al. 2018. Outputs `close_relations.csv` to `sbayesrc_genotypes/kinship/`.
+    Filters the KING kinship output to close relationships (kinship >= 0.1767) and classifies each pair as `sibling`, `parent_child`, or `identical` (twins/duplicates) using kinship coefficient and IBS0 thresholds from Bycroft et al. 2018. Outputs `close_relations.csv` to `$DX_OUTPUT_DIR/kinship/`.
 
 **ADMIXTURE K=6 projection (for population stratification)**
 
 19. **Prepare ADMIXTURE inputs** (`admixture_prep.sh` + `admixture_align_alleles.py`)
-    Downloads the ADMIXTURE binary to `tools/` (if not already present) and uploads it to DNAnexus. Then submits a Swiss Army Knife job that downloads a reference allele frequency TSV (K=6 global ADMIXTURE model: European, East Asian, American, African, South Asian, Oceanian; 135,020 SNPs), extracts matching SNPs from the direct bfile, aligns alleles between the reference and UKBB genotypes (handling allele swaps and strand flips), and produces an aligned bfile + .P frequency matrix. Outputs to `sbayesrc_genotypes/statgen/scrap/`.
+    Downloads the ADMIXTURE binary to `tools/` (if not already present) and uploads it to DNAnexus. Then submits a Swiss Army Knife job that downloads a reference allele frequency TSV (K=6 global ADMIXTURE model: European, East Asian, American, African, South Asian, Oceanian; 135,020 SNPs), extracts matching SNPs from the direct bfile, aligns alleles between the reference and UKBB genotypes (handling allele swaps and strand flips), and produces an aligned bfile + .P frequency matrix. Outputs to `$DX_OUTPUT_DIR/statgen/scrap/`.
 
 20. **Split into ADMIXTURE batches** (`admixture_split_batches.sh`)
-    Submits a Swiss Army Knife job that splits the aligned bfile into batches of 20,000 individuals. Creates per-batch bfiles and copies the .P file as `batch_NNN.K.P.in` (the naming convention ADMIXTURE requires for projection mode). Outputs to `sbayesrc_genotypes/statgen/scrap/batches/`.
+    Submits a Swiss Army Knife job that splits the aligned bfile into batches of 20,000 individuals. Creates per-batch bfiles and copies the .P file as `batch_NNN.K.P.in` (the naming convention ADMIXTURE requires for projection mode). Outputs to `$DX_OUTPUT_DIR/statgen/scrap/batches/`.
 
 21. **Run ADMIXTURE projection and build results TSV** (`admixture_run_projection.sh`)
-    Submits ~25 parallel Swiss Army Knife jobs (one per batch) to run ADMIXTURE in projection mode (`-P` flag), which estimates ancestry proportions for each individual while holding allele frequencies fixed to the reference model. After all batches complete, submits a concat job that concatenates the per-batch .Q files and pairs them with individual EIDs to produce the final `ukb_admixture_k6.tsv` at `sbayesrc_genotypes/statgen/`.
+    Submits ~25 parallel Swiss Army Knife jobs (one per batch) to run ADMIXTURE in projection mode (`-P` flag), which estimates ancestry proportions for each individual while holding allele frequencies fixed to the reference model. After all batches complete, submits a concat job that concatenates the per-batch .Q files and pairs them with individual EIDs to produce the final `ukb_admixture_k6.tsv` at `$DX_OUTPUT_DIR/statgen/`.
 
 **European ancestry classification**
 
 22. **Classify European ancestry individuals** (`classify_europeans.sh`)
-    Reads the ADMIXTURE K=6 results TSV and applies a threshold classifier to identify European individuals: European >= 0.8, African <= 0.1, American <= 0.1, East_Asian <= 0.1, Oceanian <= 0.1 (no cap on South Asian). Outputs a two-column FID/IID file to `sbayesrc_genotypes/europeans/classified_european_iids.txt`.
+    Reads the ADMIXTURE K=6 results TSV and applies a threshold classifier to identify European individuals: European >= 0.8, African <= 0.1, American <= 0.1, East_Asian <= 0.1, Oceanian <= 0.1 (no cap on South Asian). Outputs a two-column FID/IID file to `$DX_OUTPUT_DIR/europeans/classified_european_iids.txt`.
 
 **Train/test sample split (for REGENIE)**
 
 23. **Build train/test sample split** (`make_train_test_samples.sh` + `make_train_test_samples.py`)
-    Splits European-ancestry individuals into training and test samples for REGENIE, ensuring no cryptic relatedness (3rd degree or closer, kinship >= 0.0441) between the two sets. The test sample comprises White British (UKBB field 22006) siblings from our European ancestry classification; the training sample comprises all remaining Europeans, expanded to include European relatives up to 3rd degree, then pruned of anyone related to a test individual. Verification checks confirm that all test individuals are siblings, White British, and European, and that no test individual has a 3rd+ degree relative in training. Outputs `final_train_iids.txt` and `final_test_iids.txt` to `sbayesrc_genotypes/train_test/`.
+    Splits European-ancestry individuals into training and test samples for REGENIE, ensuring no cryptic relatedness (3rd degree or closer, kinship >= 0.0441) between the two sets. The test sample comprises White British (UKBB field 22006) siblings from our European ancestry classification; the training sample comprises all remaining Europeans, expanded to include European relatives up to 3rd degree, then pruned of anyone related to a test individual. Verification checks confirm that all test individuals are siblings, White British, and European, and that no test individual has a 3rd+ degree relative in training. Outputs `final_train_iids.txt` and `final_test_iids.txt` to `$DX_OUTPUT_DIR/train_test/`.
 
 **PCA (for population stratification covariates)**
 
 24. **Select unrelated European IIDs for fitting PCA** (`select_pca_europeans.sh` + `select_pca_europeans.py`)
-    Selects unrelated European IIDs for fitting PCA. Starts with classified Europeans, identifies White British siblings and expands to all their relatives (kinship >= 0.0441), removes the expanded set and imputed-only IIDs, then applies plink2 `--king-cutoff-table` to obtain a maximal unrelated subset. Outputs `fit_pca_iids.txt` to `sbayesrc_genotypes/pca_eur/`.
+    Selects unrelated European IIDs for fitting PCA. Starts with classified Europeans, identifies White British siblings and expands to all their relatives (kinship >= 0.0441), removes the expanded set and imputed-only IIDs, then applies plink2 `--king-cutoff-table` to obtain a maximal unrelated subset. Outputs `fit_pca_iids.txt` to `$DX_OUTPUT_DIR/pca_eur/`.
 
 25. **QC SNPs for PCA** (`pca_snp_qc.sh`)
-    Subsets the direct bfile to PCA-fitting IIDs, filters SNPs with MAF < 0.01, excludes long-range LD regions (Price et al. 2008, hg38), and LD prunes (window=1000, step=80, r2=0.1). Outputs `pca_ready.{bed,bim,fam}` to `sbayesrc_genotypes/pca_eur/`.
+    Subsets the direct bfile to PCA-fitting IIDs, filters SNPs with MAF < 0.01, excludes long-range LD regions (Price et al. 2008, hg38), and LD prunes (window=1000, step=80, r2=0.1). Outputs `pca_ready.{bed,bim,fam}` to `$DX_OUTPUT_DIR/pca_eur/`.
 
 26. **Fit PCA on unrelated Europeans, project onto all samples** (`fit_project_pca.sh`)
-    Fits PCA on the PCA-ready bfile (20 PCs, approximate algorithm, allele weights, seed 0), computes allele frequency counts, and projects PCs onto all samples in the direct bfile. Outputs `ukb_projected.sscore` (projected PC scores for all samples) and PCA reference files (eigenvalues, eigenvectors, allele counts) to `sbayesrc_genotypes/pca_eur/`.
+    Fits PCA on the PCA-ready bfile (20 PCs, approximate algorithm, allele weights, seed 0), computes allele frequency counts, and projects PCs onto all samples in the direct bfile. Outputs `ukb_projected.sscore` (projected PC scores for all samples) and PCA reference files (eigenvalues, eigenvectors, allele counts) to `$DX_OUTPUT_DIR/pca_eur/`.
 
 **Genetic sex covariate**
 
 27. **Build genetic sex covariate file** (`get_genetic_sex.sh` + `get_genetic_sex.py`)
-    Extracts UK Biobank fields 22001 (genetic sex) and 22019 (sex chromosome aneuploidy), excludes individuals with aneuploidy, assigns sex from field 22001 for imputed-only IIDs and from the fam file for WGS IIDs. Outputs `sex_covar.txt` (FID/IID/sex_01, coding 0=female, 1=male) to `sbayesrc_genotypes/genetic_sex/`.
+    Extracts UK Biobank fields 22001 (genetic sex) and 22019 (sex chromosome aneuploidy), excludes individuals with aneuploidy, assigns sex from field 22001 for imputed-only IIDs and from the fam file for WGS IIDs. Outputs `sex_covar.txt` (FID/IID/sex_01, coding 0=female, 1=male) to `$DX_OUTPUT_DIR/genetic_sex/`.
 
 ## Usage
 

@@ -13,7 +13,7 @@
 # Filter: removes implausible *sibling* pairs (yob_diff > 20 AND IBS0 < 0.002)
 #
 # Input:
-#   /mnt/project/sbayesrc_genotypes/kinship/ukb_all_direct_rel.kin0
+#   /mnt/project${DX_OUTPUT_DIR}/kinship/ukb_all_direct_rel.kin0
 #   birth_year_month.csv  (extracted from UKBB fields 34 + 52)
 # Output:
 #   close_relations.csv   (auto-uploaded by SAK)
@@ -23,7 +23,10 @@ import os
 import subprocess
 from datetime import date
 
-KINSHIP_PATH = "/mnt/project/sbayesrc_genotypes/kinship/ukb_all_direct_rel.kin0"
+DX_OUTPUT_DIR = os.environ.get("DX_OUTPUT_DIR", "/sbayesrc_genotypes")
+_BASE = f"/mnt/project{DX_OUTPUT_DIR}"
+
+KINSHIP_PATH = f"{_BASE}/kinship/ukb_all_direct_rel.kin0"
 BIRTH_PATH = "birth_year_month.csv"
 OUTPUT_PATH = "close_relations.csv"
 DATASET_NAME_GLOB = "app*.dataset"
