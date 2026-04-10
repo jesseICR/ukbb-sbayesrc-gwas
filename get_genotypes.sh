@@ -103,6 +103,19 @@ export DX_PCA_EUR_DIR="${DX_OUTPUT_DIR}/pca_eur"
 export DX_GENETIC_SEX_DIR="${DX_OUTPUT_DIR}/genetic_sex"
 
 # ---------------------------------------------------------------------------
+# Logging — all subsequent output goes to both terminal and log file
+# ---------------------------------------------------------------------------
+mkdir -p "${SCRIPT_DIR}/logs"
+LOG_FILE="${SCRIPT_DIR}/logs/run_$(date +%Y%m%d_%H%M%S).log"
+exec > >(tee -a "${LOG_FILE}") 2>&1
+
+echo "============================================"
+echo "Pipeline Run — $(date)"
+echo "============================================"
+echo "  LOG_FILE=${LOG_FILE}"
+echo ""
+
+# ---------------------------------------------------------------------------
 # Setup: Install Python dependencies
 # ---------------------------------------------------------------------------
 echo "=== Setup: Python dependencies ==="
