@@ -150,15 +150,47 @@ This pipeline depends on two companion repositories:
 27. **Build genetic sex covariate file** (`get_genetic_sex.sh` + `get_genetic_sex.py`)
     Extracts UK Biobank fields 22001 (genetic sex) and 22019 (sex chromosome aneuploidy), excludes individuals with aneuploidy, assigns sex from field 22001 for imputed-only IIDs and from the fam file for WGS IIDs. Outputs `sex_covar.txt` (FID/IID/sex_01, coding 0=female, 1=male) to `$DX_OUTPUT_DIR/genetic_sex/`.
 
-## Usage
+## Setup
 
-Run the full pipeline:
+### 1. Create a Python virtual environment and install `dxpy`
+
+The DNAnexus Platform SDK (`dxpy`) provides the `dx` command-line tool used throughout this pipeline. Install it in a virtual environment to keep your system Python clean:
 
 ```bash
+python3 -m venv ~/venvs/dnanexus
+source ~/venvs/dnanexus/bin/activate
+pip install --upgrade pip
+pip install dxpy
+```
+
+Verify with `dx --version`.
+
+### 2. Log in to DNAnexus
+
+You must be logged in to a UK Biobank Research Analysis Platform project before running the pipeline:
+
+```bash
+dx login
+```
+
+This will prompt for your username, password, and 2FA code. Alternatively, use a token: `dx login --token YOUR_TOKEN_HERE`.
+
+### 3. Run the pipeline
+
+```bash
+source ~/venvs/dnanexus/bin/activate   # if not already active
 bash get_genotypes.sh
 ```
 
-All steps are idempotent — existing outputs are detected and skipped.
+> **⚠️ Caution:** The pipeline automatically runs `pip install -r requirements.txt` at startup to install Python dependencies (currently just `pandas`). This is idempotent — pip does nothing if the packages are already installed. If you do not want these installed globally, make sure you have activated a virtual environment before running the pipeline.
+
+All steps are idempotent — the pipeline can be re-run safely at any point and will skip work that has already been completed.
+
+### Requirements summary
+
+- **Python 3** (>= 3.8) with `dxpy` installed (provides the `dx` CLI)
+- **`curl`** and internet access (to download alignment files, ADMIXTURE binary, and reference data)
+- Must be **logged in** to a UKBB RAP project via `dx login` before running the pipeline
 
 ### QC parameters
 
@@ -169,14 +201,6 @@ Configured at the top of `get_genotypes.sh`. These apply to WGS extraction only 
 | `GENO` | 0.03 | Maximum missingness rate |
 | `MAC` | 1000 | Minimum minor allele count |
 | `DX_PRIORITY` | `high` | DNAnexus job priority (`low`, `normal`, or `high`). Set to `normal` to save money at the cost of longer queue times. |
-
-## Requirements
-
-- **Setup**: `curl` and internet access (to download `sbayesrc_hg38.csv` alignment file)
-- **Steps 1, 4, 8**: Python 3 with `pandas`
-- **Step 15**: `curl` and internet access (to download `ukb_snp_qc.txt`)
-- **Step 19**: `curl` and internet access (to download ADMIXTURE binary and reference allele frequencies)
-- **Steps 2–3, 5–27**: `dx` CLI (DNAnexus), logged in to a UKBB Research Analysis Platform project
 
 ## File descriptions
 

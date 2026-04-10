@@ -103,6 +103,12 @@ export DX_PCA_EUR_DIR="${DX_OUTPUT_DIR}/pca_eur"
 export DX_GENETIC_SEX_DIR="${DX_OUTPUT_DIR}/genetic_sex"
 
 # ---------------------------------------------------------------------------
+# Setup: Install Python dependencies
+# ---------------------------------------------------------------------------
+echo "=== Setup: Python dependencies ==="
+pip install -r "${SCRIPT_DIR}/requirements.txt" --quiet
+
+# ---------------------------------------------------------------------------
 # Setup: Download SBayesRC alignment file (if not already cached)
 # ---------------------------------------------------------------------------
 echo "=== Setup: SBayesRC alignment file ==="
