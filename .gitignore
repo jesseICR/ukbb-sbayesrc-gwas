@@ -15,3 +15,4 @@ data/support/ukb_snp_qc.txt
 data/support/ukbb_500k_qc_pass_direct_kinship_subsetted_snps.txt
 tools/
 logs/
+nohup.out

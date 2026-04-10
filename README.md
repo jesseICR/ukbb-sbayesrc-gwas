@@ -182,6 +182,18 @@ source ~/venvs/dnanexus/bin/activate   # if not already active
 bash get_genotypes.sh
 ```
 
+The pipeline takes approximately 1 day to run end-to-end. If you want to free up your terminal (or keep the pipeline running after closing an SSH session), use `nohup` to run it in the background:
+
+```bash
+nohup bash get_genotypes.sh &
+```
+
+- `nohup` detaches the process from your terminal session, so it keeps running even if you close the window or disconnect from SSH.
+- `&` puts the process in the background and returns your shell prompt immediately.
+- When you run this, the shell prints the process ID (PID), e.g. `[1] 48293`. You can check whether the pipeline is still running with `ps -p <PID>`.
+- The pipeline writes a timestamped log to `logs/run_YYYYMMDD_HHMMSS.log`. To follow progress live: `tail -f logs/run_*.log`. `nohup` also creates a `nohup.out` file with the same output — this can be ignored.
+- Note: `nohup` survives terminal disconnection, but not machine sleep. If you close your laptop lid, the process pauses and network connections (e.g., `dx` commands) may time out. For long unattended runs, use a machine that stays on (e.g., an EC2 instance with `tmux`).
+
 > **⚠️ Caution:** The pipeline automatically runs `pip install -r requirements.txt` at startup to install Python dependencies (currently just `pandas`). This is idempotent — pip does nothing if the packages are already installed. If you do not want these installed globally, make sure you have activated a virtual environment before running the pipeline.
 
 All steps are idempotent — the pipeline can be re-run safely at any point and will skip work that has already been completed.
