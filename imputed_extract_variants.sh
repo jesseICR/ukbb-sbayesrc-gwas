@@ -50,8 +50,9 @@ echo "Submitted: ${submitted}, Skipped (already exist): ${skipped}"
 
 if [[ ${#job_ids[@]} -gt 0 ]]; then
     echo ""
-    echo "Job IDs:"
-    printf '  %s\n' "${job_ids[@]}"
-    echo ""
-    echo "Monitor with: dx watch <job_id>"
+    echo "Waiting for imputed extraction jobs ..."
+    for job_id in "${job_ids[@]}"; do
+        dx wait "${job_id}"
+    done
+    echo "All imputed extractions complete."
 fi
