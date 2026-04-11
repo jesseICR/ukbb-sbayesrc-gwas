@@ -29,6 +29,7 @@
 #  25. QC SNPs for PCA: MAF filter, LD region exclusion, LD pruning
 #  26. Fit PCA on unrelated Europeans, project onto all samples
 #  27. Build genetic sex covariate file (aneuploidy exclusion + sex assignment)
+#  28. Set up height GWAS example (phenotype + covariates from UKB fields)
 #
 # Idempotent: each step checks for existing outputs and skips if already done.
 
@@ -101,6 +102,9 @@ export DX_PCA_EUR_DIR="${DX_OUTPUT_DIR}/pca_eur"
 
 # Genetic sex covariate
 export DX_GENETIC_SEX_DIR="${DX_OUTPUT_DIR}/genetic_sex"
+
+# Height GWAS example
+export DX_HEIGHT_GWAS_DIR="${DX_OUTPUT_DIR}/gwas/height_example"
 
 # ---------------------------------------------------------------------------
 # Logging — all subsequent output goes to both terminal and log file
@@ -330,6 +334,13 @@ bash "${SCRIPT_DIR}/fit_project_pca.sh"
 echo ""
 echo "=== Step 27: Build genetic sex covariate ==="
 bash "${SCRIPT_DIR}/get_genetic_sex.sh"
+
+# ---------------------------------------------------------------------------
+# Step 28: Set up height GWAS example
+# ---------------------------------------------------------------------------
+echo ""
+echo "=== Step 28: Set up height GWAS example ==="
+bash "${SCRIPT_DIR}/setup_height_gwas.sh"
 
 echo ""
 echo "=== Pipeline complete ==="
