@@ -104,7 +104,7 @@ export DX_PCA_EUR_DIR="${DX_OUTPUT_DIR}/pca_eur"
 export DX_GENETIC_SEX_DIR="${DX_OUTPUT_DIR}/genetic_sex"
 
 # Height GWAS example
-export DX_HEIGHT_GWAS_DIR="${DX_OUTPUT_DIR}/gwas/height_example"
+export DX_HEIGHT_GWAS_DIR="${DX_OUTPUT_DIR}/regenie_input/height_example"
 
 # ---------------------------------------------------------------------------
 # Logging — all subsequent output goes to both terminal and log file
