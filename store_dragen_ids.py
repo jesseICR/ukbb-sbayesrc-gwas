@@ -44,7 +44,7 @@ def main():
             print(f"chr{chrom}: skipping — {output_path} already exists")
             continue
 
-        df = full_df[full_df["chrom"] == chrom]
+        df = full_df.loc[full_df["chrom"] == chrom].copy()
         df["dragen_id"] = df.apply(make_dragen_id, axis=1)
 
         ids = df["dragen_id"].tolist()
