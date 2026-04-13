@@ -150,6 +150,132 @@ This pipeline depends on two companion repositories:
 27. **Build genetic sex covariate file** (`get_genetic_sex.sh` + `get_genetic_sex.py`)
     Extracts UK Biobank fields 22001 (genetic sex) and 22019 (sex chromosome aneuploidy), excludes individuals with aneuploidy, assigns sex from field 22001 for imputed-only IIDs and from the fam file for WGS IIDs. Outputs `sex_covar.txt` (FID/IID/sex_01, coding 0=female, 1=male) to `$DX_OUTPUT_DIR/genetic_sex/`.
 
+**Height GWAS example**
+
+28. **Set up height GWAS example** (`setup_height_gwas.sh` + `setup_height_gwas.py`)
+    Prepares REGENIE input files for a continuous-trait GWAS of height. Intersects the European training cohort (`final_train_iids.txt` from Step 23) with the genetic sex file (`sex_covar.txt` from Step 27) to exclude individuals with sex chromosome aneuploidy. Extracts UK Biobank fields 50 (standing height) and 21003 (age at assessment) across all assessment instances, pairs measurements by instance, drops heights below 140 cm, and computes median height and mean age per individual. Centers covariates: age is mean-centered, sex is centered at 0.5 (female = -0.5, male = 0.5), and an age-by-sex interaction term is computed. Merges with PC scores 1-10 from Step 26. Outputs `phen.txt`, `covar.txt`, `training_iids.txt`, and a processing log to `$DX_OUTPUT_DIR/regenie_input/height_example/`. See [REGENIE input files](#regenie-input-files) for file format details.
+
+29. **Run height GWAS example** (`run_continuous_regenie_gwas.sh`)
+    Launches a continuous-trait REGENIE GWAS using the height example input files from Step 28. This step demonstrates the standalone GWAS runner tool described in [Running a GWAS](#running-a-gwas). Submits the REGENIE app on DNAnexus with default settings (RINT enabled, block sizes 1000/200) and writes results to `$DX_OUTPUT_DIR/regenie_output/height_example/`.
+
+## Running a GWAS
+
+After the pipeline completes, the `run_continuous_regenie_gwas.sh` script provides a command-line tool for running continuous-trait GWAS via the [REGENIE](https://rgcgithub.github.io/regenie/) app on DNAnexus. The pipeline produces all the required genotype files (Steps 12 and 14) and includes a worked example for height (Steps 28-29), but the tool is designed to be used repeatedly for any phenotype of interest.
+
+### Usage
+
+```bash
+bash run_continuous_regenie_gwas.sh <input_name> <output_name> [OPTIONS]
+```
+
+| Argument | Description |
+|---|---|
+| `input_name` | Directory name under `$DX_OUTPUT_DIR/regenie_input/` containing the three required input files |
+| `output_name` | Directory name for `$DX_OUTPUT_DIR/regenie_output/` where REGENIE results will be written |
+
+| Option | Default | Description |
+|---|---|---|
+| `--apply-rint` | enabled | Apply rank inverse normal transformation to the phenotype |
+| `--no-apply-rint` | | Disable RINT |
+| `--step1-block-size N` | 1000 | Number of variants per block in REGENIE Step 1 (whole-genome ridge regression) |
+| `--step2-block-size N` | 200 | Number of variants per block in REGENIE Step 2 (association testing) |
+| `--priority LEVEL` | normal | DNAnexus job priority: `low`, `normal`, or `high` |
+
+Example:
+
+```bash
+# Run the height example produced by the pipeline
+bash run_continuous_regenie_gwas.sh height_example height_v1
+
+# Same phenotype, different settings
+bash run_continuous_regenie_gwas.sh height_example height_v2 --no-apply-rint --priority high
+```
+
+### What the script does
+
+1. **Validates inputs.** Checks that the input directory exists on DNAnexus and contains the three required files (`phen.txt`, `covar.txt`, `training_iids.txt`). Also checks that the Step 1 bfiles (`$DX_OUTPUT_DIR/direct_bfile/chr1_22_merged.*`) and Step 2 BGENs (`$DX_OUTPUT_DIR/merged_bgens/chr{1..22}.*`) exist.
+
+2. **Overwrite protection.** Checks that the output directory does **not** already exist on DNAnexus. If it does, the script exits with an error to prevent overwriting existing GWAS results. To re-run a GWAS, choose a different output name or remove the existing output directory first.
+
+3. **Submits the REGENIE app.** Launches the DNAnexus REGENIE app with the validated inputs, configured options, and the following fixed settings:
+   - Quantitative traits (`-iquant_traits=true`)
+   - PRS mode disabled (`-iprs_mode=false`)
+   - Additive test (`-itest_type=additive`)
+   - First allele as reference for both steps (`-istep1_ref_first=true`, `-istep2_ref_first=true`)
+   - `training_iids.txt` is used as the keep file for both Step 1 and Step 2, restricting the analysis to the specified sample
+
+4. **Reports the job ID** and monitoring commands.
+
+### REGENIE input files
+
+To run a GWAS, you must prepare three input files in a directory under `$DX_OUTPUT_DIR/regenie_input/` on DNAnexus. The pipeline's height example (Step 28) demonstrates how to produce these files; you can follow the same pattern for any phenotype.
+
+#### `training_iids.txt` — sample inclusion list
+
+A two-column, space-separated file with no header. Each row is an FID/IID pair identifying an individual to include in the GWAS. This file is passed to REGENIE's `--keep` flag for both Step 1 and Step 2, so only individuals listed here are analyzed.
+
+```
+1 1
+2 2
+3 3
+```
+
+This file should be the **intersection** of two pipeline outputs:
+
+- **`$DX_OUTPUT_DIR/train_test/final_train_iids.txt`** (Step 23) — the European training cohort. This is the definitive set of European-ancestry individuals selected for GWAS, with kinship separation from the test cohort enforced.
+
+- **`$DX_OUTPUT_DIR/genetic_sex/sex_covar.txt`** (Step 27) — the genetic sex covariate file, which **excludes individuals with sex chromosome aneuploidy**. Aneuploidy individuals are removed during Step 27 because sex chromosome aneuploidy can confound genetic analyses. However, the training cohort from Step 23 is built before aneuploidy exclusion and may still contain these individuals.
+
+The intersection ensures that training IIDs are both (a) members of the European training cohort and (b) free of sex chromosome aneuploidy. Any individual present in `final_train_iids.txt` but absent from `sex_covar.txt` has aneuploidy and is excluded from the GWAS. In the height example, this intersection is performed automatically by `setup_height_gwas.py`.
+
+#### `phen.txt` — phenotype file
+
+A tab-separated file with a header row. The first two columns must be `FID` and `IID`. Subsequent columns are phenotype values (one column per trait). Only individuals with non-missing phenotype values should be included.
+
+> **⚠️ Disclaimer:** All example values shown below are entirely synthetic and do not correspond to any UK Biobank participant. These are random illustrative values only.
+
+```
+FID	IID	height
+1	1	170.0
+2	2	165.5
+```
+
+In the height example, `height` is standing height in centimeters (UK Biobank field 50). When multiple assessment instances are available for an individual, measurements below 140 cm are excluded as likely errors, and the median of the remaining measurements is used.
+
+#### `covar.txt` — covariate file
+
+A tab-separated file with a header row. The first two columns must be `FID` and `IID`. Subsequent columns are covariates to adjust for in the association model.
+
+```
+FID	IID	age_c	sex_c	age_c_sex_c_inter	PC1_AVG	PC2_AVG	PC3_AVG	...	PC10_AVG
+1	1	-5.16	-0.5	2.58	0.001	-0.005	0.002	...	0.001
+2	2	3.84	0.5	1.92	-0.002	0.007	-0.001	...	-0.001
+```
+
+In the height example, the covariates are:
+
+| Column | Description |
+|---|---|
+| `age_c` | Age at assessment, **mean-centered** (age minus the sample mean age). Centering ensures the intercept is interpretable and reduces collinearity with the interaction term. |
+| `sex_c` | Genetic sex, **centered at 0.5** (female = -0.5, male = 0.5). Centering at 0.5 rather than using raw 0/1 coding makes the main effects of age and sex interpretable as effects at the average level of the other variable, rather than at the reference category. |
+| `age_c_sex_c_inter` | Interaction term: `age_c * sex_c`. Captures sex-dependent age effects on the phenotype. |
+| `PC1_AVG` through `PC10_AVG` | The first 10 principal components from Step 26, projected onto all samples. These control for population stratification. |
+
+### Preparing your own GWAS input files
+
+To run a GWAS for a different phenotype, create a new directory under `$DX_OUTPUT_DIR/regenie_input/` on DNAnexus (e.g., `regenie_input/bmi_example/`) containing the three files described above. You can use `setup_height_gwas.py` as a template — the key steps are:
+
+1. Intersect `final_train_iids.txt` with `sex_covar.txt` to get eligible training IIDs
+2. Extract and clean your phenotype of interest from UK Biobank fields
+3. Build covariates with centering and PC scores
+4. Upload the three files to your input directory on DNAnexus
+
+Then run:
+
+```bash
+bash run_continuous_regenie_gwas.sh your_input_name your_output_name
+```
+
 ## Setup
 
 ### 1. Create a Python virtual environment and install `dxpy`
@@ -251,3 +377,6 @@ Configured at the top of `get_genotypes.sh`. These apply to WGS extraction only 
 | `fit_project_pca.sh` | Submits SAK job to fit PCA on unrelated Europeans and project onto all samples |
 | `get_genetic_sex.sh` | Submits SAK job to build genetic sex covariate file |
 | `get_genetic_sex.py` | Assigns sex from field 22001 / fam file, excludes aneuploidy individuals |
+| `setup_height_gwas.sh` | Submits SAK job to prepare height GWAS input files |
+| `setup_height_gwas.py` | Builds phenotype, covariate, and training sample files for height GWAS |
+| `run_continuous_regenie_gwas.sh` | Standalone CLI tool to launch continuous-trait GWAS via REGENIE on DNAnexus |
