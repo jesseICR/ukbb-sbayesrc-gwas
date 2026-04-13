@@ -9,31 +9,31 @@
 #   5. Centers covariates (age_c, sex_c, interaction)
 #   6. Merges with PC scores 1-10
 #
-# Output:       ${DX_HEIGHT_GWAS_DIR}/training_iids.txt
-#               ${DX_HEIGHT_GWAS_DIR}/phen.txt
-#               ${DX_HEIGHT_GWAS_DIR}/base_covar.txt
-#               ${DX_HEIGHT_GWAS_DIR}/covar.txt
-#               ${DX_HEIGHT_GWAS_DIR}/height_gwas_log.txt
+# Output:       ${DX_HEIGHT_REGENIE_INPUT_DIR}/training_iids.txt
+#               ${DX_HEIGHT_REGENIE_INPUT_DIR}/phen.txt
+#               ${DX_HEIGHT_REGENIE_INPUT_DIR}/base_covar.txt
+#               ${DX_HEIGHT_REGENIE_INPUT_DIR}/covar.txt
+#               ${DX_HEIGHT_REGENIE_INPUT_DIR}/height_gwas_log.txt
 # Verification: printed to stdout (visible in job log via `dx watch`)
 #
-# Expects env vars: DX_HEIGHT_GWAS_DIR, DX_OUTPUT_DIR, INSTANCE_TYPE, DX_PRIORITY
+# Expects env vars: DX_HEIGHT_REGENIE_INPUT_DIR, DX_OUTPUT_DIR, INSTANCE_TYPE, DX_PRIORITY
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Idempotency: skip if final output file already exists
-if dx ls "${DX_HEIGHT_GWAS_DIR}/covar.txt" &>/dev/null; then
+if dx ls "${DX_HEIGHT_REGENIE_INPUT_DIR}/covar.txt" &>/dev/null; then
     echo "  covar.txt already exists — skipping"
     exit 0
 fi
 
 # Create output directory
-dx mkdir -p "${DX_HEIGHT_GWAS_DIR}"
+dx mkdir -p "${DX_HEIGHT_REGENIE_INPUT_DIR}"
 
 # Upload Python script as SAK input
 script_id=$(dx upload "${SCRIPT_DIR}/setup_height_gwas.py" \
-    --destination "${DX_HEIGHT_GWAS_DIR}/" --brief --no-progress)
+    --destination "${DX_HEIGHT_REGENIE_INPUT_DIR}/" --brief --no-progress)
 
 cmd="export DX_OUTPUT_DIR='${DX_OUTPUT_DIR}' && set -eo pipefail && \
 echo '--- Setting up height GWAS example ---' && \
@@ -43,7 +43,7 @@ echo '--- Done ---'"
 job_id=$(dx run swiss-army-knife \
     -iin="${script_id}" \
     -icmd="${cmd}" \
-    --destination "${DX_HEIGHT_GWAS_DIR}/" \
+    --destination "${DX_HEIGHT_REGENIE_INPUT_DIR}/" \
     --instance-type "${INSTANCE_TYPE}" \
     --priority "${DX_PRIORITY}" \
     --name "setup_height_gwas" \

@@ -30,6 +30,7 @@
 #  26. Fit PCA on unrelated Europeans, project onto all samples
 #  27. Build genetic sex covariate file (aneuploidy exclusion + sex assignment)
 #  28. Set up height GWAS example (phenotype + covariates from UKB fields)
+#  29. Run height GWAS example with REGENIE (continuous trait)
 #
 # Idempotent: each step checks for existing outputs and skips if already done.
 
@@ -104,7 +105,7 @@ export DX_PCA_EUR_DIR="${DX_OUTPUT_DIR}/pca_eur"
 export DX_GENETIC_SEX_DIR="${DX_OUTPUT_DIR}/genetic_sex"
 
 # Height GWAS example
-export DX_HEIGHT_GWAS_DIR="${DX_OUTPUT_DIR}/regenie_input/height_example"
+export DX_HEIGHT_REGENIE_INPUT_DIR="${DX_OUTPUT_DIR}/regenie_input/height_example"
 
 # ---------------------------------------------------------------------------
 # Logging — all subsequent output goes to both terminal and log file
@@ -341,6 +342,14 @@ bash "${SCRIPT_DIR}/get_genetic_sex.sh"
 echo ""
 echo "=== Step 28: Set up height GWAS example ==="
 bash "${SCRIPT_DIR}/setup_height_gwas.sh"
+
+# ---------------------------------------------------------------------------
+# Step 29: Run height GWAS example with REGENIE
+# ---------------------------------------------------------------------------
+echo ""
+echo "=== Step 29: Run height GWAS example ==="
+bash "${SCRIPT_DIR}/run_continuous_regenie_gwas.sh" height_example height_example \
+    --priority "${DX_PRIORITY}"
 
 echo ""
 echo "=== Pipeline complete ==="
