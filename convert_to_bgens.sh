@@ -45,6 +45,7 @@ echo 'Done: chr${chrom}.bgen + chr${chrom}.bgen.bgi created'"
         --instance-type "${INSTANCE_TYPE}" \
         --priority "${DX_PRIORITY}" \
         --name "convert_bgen_chr${chrom}" \
+        --ignore-reuse \
         -y --brief)
 
     echo "    chr${chrom}: submitted ${job_id}"

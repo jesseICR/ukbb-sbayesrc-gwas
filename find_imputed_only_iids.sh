@@ -35,6 +35,7 @@ job_id=$(dx run swiss-army-knife \
     --instance-type "${INSTANCE_TYPE}" \
     --priority "${DX_PRIORITY}" \
     --name "find_imputed_only_iids" \
+    --ignore-reuse \
     -y --brief)
 
 echo "Submitted ${job_id} — waiting for completion ..."

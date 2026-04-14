@@ -38,6 +38,7 @@ job_id=$(dx run swiss-army-knife \
     --instance-type "${INSTANCE_TYPE}" \
     --priority "${DX_PRIORITY}" \
     --name "make_direct_bfile" \
+    --ignore-reuse \
     -y --brief)
 
 echo "  Submitted ${job_id} — waiting for completion ..."

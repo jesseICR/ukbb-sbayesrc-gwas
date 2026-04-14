@@ -38,6 +38,7 @@ job_id=$(dx run swiss-army-knife \
     --instance-type "mem1_ssd1_v2_x2" \
     --priority "${DX_PRIORITY}" \
     --name "classify_europeans" \
+    --ignore-reuse \
     -y --brief)
 
 echo "  Submitted ${job_id} — waiting for completion ..."

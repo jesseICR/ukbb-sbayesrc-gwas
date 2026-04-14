@@ -40,6 +40,7 @@ for genotype_type in wgs imputed; do
             --instance-type "${INSTANCE_TYPE}" \
             --priority "${DX_PRIORITY}" \
             --name "backup_${genotype_type}_pvar_chr${chrom}" \
+            --ignore-reuse \
             -y --brief)
 
         echo "chr${chrom} (${genotype_type}): submitted ${job_id}"

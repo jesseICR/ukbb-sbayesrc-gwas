@@ -42,7 +42,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-export DX_PRIORITY="high"               # DNAnexus job priority (low, normal, high)
+export DX_PRIORITY="normal"               # DNAnexus job priority (low, normal, high)
 export GENO=0.03        # for WGS DRAGEN extraction: missingness threshold
 export MAC=1000         # for WGS DRAGEN extraction: minor allele count threshold
 export INSTANCE_TYPE="mem2_ssd1_v2_x16"  # DNAnexus instance for plink2 jobs

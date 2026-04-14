@@ -71,6 +71,7 @@ rm -f ${batch}.bed ${batch}.bim ${batch}.fam ${batch}.${K}.P.in ${batch}.${K}.P 
         --instance-type "${ADMIXTURE_INSTANCE_TYPE}" \
         --priority "${DX_PRIORITY}" \
         --name "admixture_${batch}" \
+        --ignore-reuse \
         -y --brief)
 
     echo "    ${batch}: submitted ${job_id}"
@@ -109,6 +110,7 @@ job_id=$(dx run swiss-army-knife \
     --instance-type "mem1_ssd1_v2_x2" \
     --priority "${DX_PRIORITY}" \
     --name "admixture_concat_results" \
+    --ignore-reuse \
     -y --brief)
 
 echo "  Submitted ${job_id} — waiting for completion ..."

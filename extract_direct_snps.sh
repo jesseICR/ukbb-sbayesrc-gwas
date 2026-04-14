@@ -55,6 +55,7 @@ echo 'Done: chr${chrom}.pgen/.pvar/.psam created'"
         --instance-type "${INSTANCE_TYPE}" \
         --priority "${DX_PRIORITY}" \
         --name "extract_direct_chr${chrom}" \
+        --ignore-reuse \
         -y --brief)
 
     echo "    chr${chrom}: submitted ${job_id}"

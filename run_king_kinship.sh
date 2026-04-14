@@ -44,6 +44,7 @@ job_id=$(dx run swiss-army-knife \
     --instance-type "${KINSHIP_INSTANCE_TYPE}" \
     --priority "${DX_PRIORITY}" \
     --name "king_kinship_estimation" \
+    --ignore-reuse \
     -y --brief)
 
 echo "  Submitted ${job_id} — waiting for completion ..."

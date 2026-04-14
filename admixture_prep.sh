@@ -86,6 +86,7 @@ job_id=$(dx run swiss-army-knife \
     --instance-type "${ADMIXTURE_PREP_INSTANCE_TYPE}" \
     --priority "${DX_PRIORITY}" \
     --name "admixture_prep_align" \
+    --ignore-reuse \
     -y --brief)
 
 echo "  Submitted ${job_id} — waiting for completion ..."

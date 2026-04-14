@@ -44,6 +44,7 @@ job_id=$(dx run swiss-army-knife \
     --instance-type "${INSTANCE_TYPE}" \
     --priority "${DX_PRIORITY}" \
     --name "make_train_test_samples" \
+    --ignore-reuse \
     -y --brief)
 
 echo "  Submitted ${job_id} — waiting for completion ..."

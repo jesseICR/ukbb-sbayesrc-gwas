@@ -38,6 +38,7 @@ for chrom in $(seq 1 22); do
         --instance-type "${INSTANCE_TYPE}" \
         --priority "${DX_PRIORITY}" \
         --name "imputed_extract_chr${chrom}" \
+        --ignore-reuse \
         -y --brief)
 
     echo "chr${chrom}: submitted ${job_id}"

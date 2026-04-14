@@ -127,6 +127,7 @@ rm -f merged.bed merged.bim merged.fam merged.nosex merged-merge.missnp"
         --instance-type "${MERGE_INSTANCE_TYPE}" \
         --priority "${DX_PRIORITY}" \
         --name "merge_wgs_imputed_chr${chrom}" \
+        --ignore-reuse \
         -y --brief)
 
     echo "    chr${chrom}: submitted ${job_id}"
@@ -176,6 +177,7 @@ echo \"Converted chr${chrom}: \$(wc -l < chr${chrom}.psam) samples, \$(wc -l < c
         --instance-type "${MERGE_INSTANCE_TYPE}" \
         --priority "${DX_PRIORITY}" \
         --name "convert_merged_pfile_chr${chrom}" \
+        --ignore-reuse \
         -y --brief)
 
     echo "    chr${chrom}: submitted ${job_id}"

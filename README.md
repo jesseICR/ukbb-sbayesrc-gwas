@@ -336,7 +336,7 @@ Configured at the top of `get_genotypes.sh`. These apply to WGS extraction only 
 
 | Parameter | Value | Description |
 |---|---|---|
-| `DX_PRIORITY` | `high` | DNAnexus job priority (`low`, `normal`, or `high`). Set to `normal` to save money at the cost of longer queue times. |
+| `DX_PRIORITY` | `normal` | DNAnexus job priority (`low`, `normal`, or `high`). Set to `normal` to save money at the cost of longer queue times. |
 
 ## File descriptions
 
