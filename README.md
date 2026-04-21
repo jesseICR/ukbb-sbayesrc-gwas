@@ -158,6 +158,55 @@ This pipeline depends on two companion repositories:
 29. **Run height GWAS example** (`run_continuous_regenie_gwas.sh`)
     Launches a continuous-trait REGENIE GWAS using the height example input files from Step 28. This step demonstrates the standalone GWAS runner tool described in [Running a GWAS](#running-a-gwas). Submits the REGENIE app on DNAnexus with default settings (RINT enabled, block sizes 1000/200) and writes results to `$DX_OUTPUT_DIR/regenie_output/height_example/`.
 
+## Optional: QC SNPs for LD-matrix generation
+
+After `get_genotypes.sh` completes, a second pipeline — [`generate_ld.sh`](generate_ld.sh) — produces a QC-filtered SNP list suitable for downstream LD-matrix generation. This is an **optional** companion pipeline; it is not required for running a GWAS with REGENIE. It is idempotent and follows the same master-orchestrator + sub-scripts pattern as `get_genotypes.sh`.
+
+### What it does
+
+The pipeline compares alternate-allele frequencies between three sources on the same set of EUR-ancestry individuals (intersection of `fit_pca_iids.txt` from Step 24 with positive IIDs from the imputed data), then drops any SNP that fails any of three thresholds:
+
+1. **Low minor-allele frequency in WGS** (`MAF_THRESHOLD`, default `0.007`) — rare-variant noise.
+2. **WGS vs TopMed-imputed allele-frequency disagreement** (`FREQ_DIFF_THRESHOLD`, default `0.025`) — large |WGS − TopMed| indicates the UKB TopMed imputation disagrees with WGS truth in our own EUR samples.
+3. **WGS vs HRC-imputed (SBayesRC) allele-frequency disagreement** (`SBAYESRC_FREQ_DIFF_THRESHOLD`, default `0.03`) — large |WGS − HRC| indicates our WGS frequencies disagree with the SBayesRC paper's own HRC-imputed white-British reference panel (hg19; lifted to hg38 and allele-aligned). The SBayesRC paper is [Zheng et al. 2024, *Nat Genet*](https://www.nature.com/articles/s41588-024-01704-y).
+
+All three thresholds are exposed as modifiable constants at the top of [`generate_ld.sh`](generate_ld.sh).
+
+### Pipeline steps
+
+1. **Compute WGS vs TopMed allele-frequency comparison** (`compute_freq_compare.sh`)
+   Submits a Swiss Army Knife job that runs plink2 `--freq counts` on the per-chromosome WGS and imputed pfiles (both restricted to the same EUR sample intersection and to variants in the merged pfiles), then merges the per-chromosome `.acount` outputs into a single per-variant CSV. Outputs `wgs_vs_imputed_freq.csv` to `$DX_OUTPUT_DIR/freq_compare/` on DNAnexus.
+
+2. **Download frequency-comparison CSV** (`download_freq_compare.sh`)
+   Downloads the DNAnexus CSV from Step 1 to `data/freq_compare/wgs_vs_imputed_freq.csv`. This is variant-level summary data (per-variant allele counts and sample totals), not individual-level.
+
+3. **QC-filter variants** (`qc_snps.sh` + `qc_snps.py`)
+   Downloads the SBayesRC liftover CSV (from the [sbayesrc-liftover](https://github.com/jesseICR/sbayesrc-liftover) release, contains the hg19 → hg38 allele mapping with HRC-imputed `A1Freq`) and runs Python QC locally. Aligns SBayesRC's hg19 `A1Freq` onto the hg38 ALT allele (handling palindromic/strand-flipped SNPs via the Watson–Crick complement), applies the three filters, and writes the annotated QC-passed CSV.
+
+### What it produces
+
+`data/freq_compare/wgs_vs_imputed_freq_qc_passed.csv` — one row per QC-passed variant, with the original freq-comparison columns plus four derived columns: `alt_freq_wgs`, `alt_freq_topmed`, `abs_diff_wgs_vs_topmed`, and `alt_freq_hrc` (SBayesRC HRC-imputed ALT frequency in hg38). The `variant_id` column (RSIDs) is the input list for the LD-generation step.
+
+### Variant counts (default thresholds)
+
+| Stage | SNPs | Loss |
+|---|---:|---:|
+| Original SBayesRC panel (hg19 → hg38 liftover) | 7,356,518 | — |
+| After WGS + TopMed extraction + merge (`get_genotypes.sh` outputs) | 7,349,366 | 7,152 |
+| After QC filtering (`generate_ld.sh` output) | 7,346,501 | 2,865 |
+| **Total lost from the original SBayesRC panel** | | **10,017** |
+
+Of the 2,865 variants dropped by QC: 153 by the MAF filter, 1,766 by the WGS-vs-TopMed freq-diff filter, 1,462 by the WGS-vs-HRC freq-diff filter (with 447 variants failing both freq-diff filters jointly).
+
+### Running it
+
+```bash
+source ~/venvs/dnanexus/bin/activate   # if not already active
+bash generate_ld.sh
+```
+
+The only DNAnexus write is Step 1 (the frequency-comparison output at `$DX_OUTPUT_DIR/freq_compare/wgs_vs_imputed_freq.csv`). Steps 2 and 3 are local only. A full fresh run on the default thresholds takes ~15 minutes end-to-end (dominated by the Step 1 DNAnexus job); subsequent re-runs skip every step.
+
 ## Running a GWAS
 
 After the pipeline completes, the `run_continuous_regenie_gwas.sh` script provides a command-line tool for running continuous-trait GWAS via the [REGENIE](https://rgcgithub.github.io/regenie/) app on DNAnexus. The pipeline produces all the required genotype files (Steps 12 and 14) and includes a worked example for height (Steps 28-29), but the tool is designed to be used repeatedly for any phenotype of interest.
@@ -380,3 +429,8 @@ Configured at the top of `get_genotypes.sh`. These apply to WGS extraction only 
 | `setup_height_gwas.sh` | Submits SAK job to prepare height GWAS input files |
 | `setup_height_gwas.py` | Builds phenotype, covariate, and training sample files for height GWAS |
 | `run_continuous_regenie_gwas.sh` | Standalone CLI tool to launch continuous-trait GWAS via REGENIE on DNAnexus |
+| `generate_ld.sh` | Optional orchestrator — QCs SNPs for downstream LD-matrix generation (runs after `get_genotypes.sh`) |
+| `compute_freq_compare.sh` | Submits SAK job to compute WGS vs TopMed allele-frequency comparison on EUR samples |
+| `download_freq_compare.sh` | Downloads the freq-comparison CSV from DNAnexus to `data/freq_compare/` |
+| `qc_snps.sh` | Wrapper that caches the SBayesRC liftover CSV and invokes `qc_snps.py` |
+| `qc_snps.py` | Applies MAF + WGS-vs-TopMed + WGS-vs-HRC freq-diff filters to produce the QC-passed SNP list |
