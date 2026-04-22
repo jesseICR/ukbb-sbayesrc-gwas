@@ -12,6 +12,9 @@
 #        - |alt_freq_wgs - alt_freq_topmed_imputed| > FREQ_DIFF_THRESHOLD     (imputation disagrees with WGS in UKB)
 #        - |alt_freq_wgs - alt_freq_hrc_sbayesrc| > SBAYESRC_FREQ_DIFF_THRESHOLD (disagrees with SBayesRC's own reference panel)
 #      Reference: Zheng et al. 2024, Nat Genet (SBayesRC paper).
+#   4. Sample 40k LD-reference cohort (unrelated European White British, fixed seed)
+#   5. Derive hg38 LD-block boundaries from SBayesRC's per-SNP Block assignments
+#   6. Build per-chromosome WGS bfiles filtered to the 40k cohort x QC-passed SNPs
 
 set -euo pipefail
 
@@ -20,7 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ---------------------------------------------------------------------------
 # QC thresholds — modifiable
 # ---------------------------------------------------------------------------
-export MAF_THRESHOLD=0.007                  # min minor-allele frequency in WGS
+export MAF_THRESHOLD=0.009                  # min minor-allele frequency in WGS
 export FREQ_DIFF_THRESHOLD=0.025            # max |WGS − TopMed-imputed| allele-freq diff
 export SBAYESRC_FREQ_DIFF_THRESHOLD=0.03    # max |WGS − HRC-imputed (SBayesRC)| allele-freq diff
 
@@ -33,6 +36,16 @@ export DX_OUTPUT_DIR="/sbayesrc_genotypes"
 export DX_FREQ_COMPARE_DIR="${DX_OUTPUT_DIR}/freq_compare"
 export DX_FREQ_COMPARE_CSV="${DX_FREQ_COMPARE_DIR}/wgs_vs_imputed_freq.csv"
 
+# Source WGS pfiles (produced by get_genotypes.sh Step 3 + standardized in Step 8).
+export DX_WGS_PFILE_DIR="${DX_OUTPUT_DIR}/wgs_pfiles"
+
+# LD-reference outputs
+export DX_LD_REF_DIR="${DX_OUTPUT_DIR}/ld_reference"
+export DX_LD_COHORT_FILE="${DX_LD_REF_DIR}/ld_ref_40k_iids.txt"
+export DX_LD_SNPS_FILE="${DX_LD_REF_DIR}/ld_ref_snps.txt"
+export DX_LD_BFILE_DIR="${DX_LD_REF_DIR}/bfiles"
+export DX_LD_BLOCKS_FILE="${DX_LD_REF_DIR}/ref4cM_hg38.pos"
+
 # ---------------------------------------------------------------------------
 # Local paths
 # ---------------------------------------------------------------------------
@@ -41,7 +54,21 @@ export LOCAL_FREQ_COMPARE_CSV="${LOCAL_FREQ_COMPARE_DIR}/wgs_vs_imputed_freq.csv
 export LOCAL_SBAYESRC_LIFTOVER_CSV="${LOCAL_FREQ_COMPARE_DIR}/sbayesrc_liftover_results.csv"
 export LOCAL_QC_PASSED_CSV="${LOCAL_FREQ_COMPARE_DIR}/wgs_vs_imputed_freq_qc_passed.csv"
 
+export LOCAL_LD_REF_DIR="${SCRIPT_DIR}/data/ld_reference"
+export LOCAL_BLOCKS_HG38="${LOCAL_LD_REF_DIR}/ref4cM_hg38.pos"
+
+# Canonical hg38 alignment file (downloaded by get_genotypes.sh).
+# Used by Step 5's round-trip QC as the position source.
+export ALIGNMENT_FILE="${SCRIPT_DIR}/data/support/sbayesrc_hg38.csv"
+
 export SBAYESRC_LIFTOVER_URL="https://github.com/jesseICR/sbayesrc-liftover/releases/download/v1.0/sbayesrc_liftover_results.csv"
+
+# ---------------------------------------------------------------------------
+# LD-reference cohort + bfile config
+# ---------------------------------------------------------------------------
+export LD_COHORT_SIZE=40000
+export RANDOM_SEED=0
+export LD_REF_INSTANCE_TYPE="mem2_ssd1_v2_x16"
 
 # ---------------------------------------------------------------------------
 # Logging — all subsequent output goes to both terminal and log file
@@ -86,6 +113,30 @@ echo ""
 echo "=== Step 3: QC-filter variants ==="
 bash "${SCRIPT_DIR}/qc_snps.sh"
 
+# ---------------------------------------------------------------------------
+# Step 4: Sample 40k LD-reference cohort (DNAnexus)
+# ---------------------------------------------------------------------------
+echo ""
+echo "=== Step 4: Sample 40k LD-reference cohort ==="
+bash "${SCRIPT_DIR}/sample_ld_cohort.sh"
+
+# ---------------------------------------------------------------------------
+# Step 5: Derive hg38 LD-block boundaries from per-SNP Block assignments
+# ---------------------------------------------------------------------------
+echo ""
+echo "=== Step 5: Derive hg38 LD-block boundaries ==="
+bash "${SCRIPT_DIR}/build_hg38_blocks.sh"
+
+# ---------------------------------------------------------------------------
+# Step 6: Build per-chromosome LD-reference bfiles (DNAnexus)
+# ---------------------------------------------------------------------------
+echo ""
+echo "=== Step 6: Build per-chromosome LD-reference bfiles ==="
+bash "${SCRIPT_DIR}/build_ld_ref_bfiles.sh"
+
 echo ""
 echo "=== Generate-LD pipeline complete ==="
 echo "    Final QC-passed CSV: ${LOCAL_QC_PASSED_CSV}"
+echo "    LD-reference cohort: ${DX_LD_COHORT_FILE}"
+echo "    LD-reference blocks: ${LOCAL_BLOCKS_HG38} (also at ${DX_LD_BLOCKS_FILE})"
+echo "    LD-reference bfiles: ${DX_LD_BFILE_DIR}/chr{1..22}.{bed,bim,fam,log}"

@@ -158,19 +158,27 @@ This pipeline depends on two companion repositories:
 29. **Run height GWAS example** (`run_continuous_regenie_gwas.sh`)
     Launches a continuous-trait REGENIE GWAS using the height example input files from Step 28. This step demonstrates the standalone GWAS runner tool described in [Running a GWAS](#running-a-gwas). Submits the REGENIE app on DNAnexus with default settings (RINT enabled, block sizes 1000/200) and writes results to `$DX_OUTPUT_DIR/regenie_output/height_example/`.
 
-## Optional: QC SNPs for LD-matrix generation
+## Optional: Prepare inputs for LD-matrix generation
 
-After `get_genotypes.sh` completes, a second pipeline — [`generate_ld.sh`](generate_ld.sh) — produces a QC-filtered SNP list suitable for downstream LD-matrix generation. This is an **optional** companion pipeline; it is not required for running a GWAS with REGENIE. It is idempotent and follows the same master-orchestrator + sub-scripts pattern as `get_genotypes.sh`.
+After `get_genotypes.sh` completes, a second pipeline — [`generate_ld.sh`](generate_ld.sh) — prepares the inputs needed to build a custom SBayesRC LD reference from UK Biobank WGS data. This is an **optional** companion pipeline; it is not required for running a GWAS with REGENIE. It is idempotent and follows the same master-orchestrator + sub-scripts pattern as `get_genotypes.sh`.
+
+Why build a custom LD reference rather than use the published SBayesRC reference panel? Three reasons: (1) subtle hg19↔hg38 drift remains even after careful liftover; (2) the published panel is HRC-imputed, which is lower-quality than TOPmed and far lower-quality than WGS; (3) SBayesRC's own GWAS-beta imputation step performs poorly on SNPs we already drop for large allele-frequency mismatches. Building a UKBB-native, hg38, WGS-based LD reference avoids all three.
 
 ### What it does
 
-The pipeline compares alternate-allele frequencies between three sources on the same set of EUR-ancestry individuals (intersection of `fit_pca_iids.txt` from Step 24 with positive IIDs from the imputed data), then drops any SNP that fails any of three thresholds:
+The pipeline produces three sets of outputs:
 
-1. **Low minor-allele frequency in WGS** (`MAF_THRESHOLD`, default `0.007`) — rare-variant noise.
+- **A QC-filtered SNP list** (Steps 1–3) — compares alternate-allele frequencies between three sources on the same set of EUR-ancestry individuals (intersection of `fit_pca_iids.txt` from Step 24 with positive IIDs from the imputed data), then drops any SNP that fails any of three thresholds (see below).
+- **A 40k-individual LD-reference cohort** (Step 4) — a random sample of unrelated European, genetically-sexed, White British UK Biobank participants.
+- **An hg38 block-boundary file and per-chromosome WGS bfiles** (Steps 5–6) — the block file derived directly from the per-SNP `Block` assignments in `sbayesrc_liftover_results.csv`, and per-chromosome bfiles filtered to the 40k cohort × QC-passed SNPs. Together these are the direct inputs to SBayesRC's `LDstep1`–`LDstep4` R functions.
+
+The three SNP-QC thresholds applied in Steps 1–3:
+
+1. **Low minor-allele frequency in WGS** (`MAF_THRESHOLD`, default `0.009`) — rare-variant noise.
 2. **WGS vs TopMed-imputed allele-frequency disagreement** (`FREQ_DIFF_THRESHOLD`, default `0.025`) — large |WGS − TopMed| indicates the UKB TopMed imputation disagrees with WGS truth in our own EUR samples.
 3. **WGS vs HRC-imputed (SBayesRC) allele-frequency disagreement** (`SBAYESRC_FREQ_DIFF_THRESHOLD`, default `0.03`) — large |WGS − HRC| indicates our WGS frequencies disagree with the SBayesRC paper's own HRC-imputed white-British reference panel (hg19; lifted to hg38 and allele-aligned). The SBayesRC paper is [Zheng et al. 2024, *Nat Genet*](https://www.nature.com/articles/s41588-024-01704-y).
 
-All three thresholds are exposed as modifiable constants at the top of [`generate_ld.sh`](generate_ld.sh).
+All three thresholds, the LD-reference cohort size (`LD_COHORT_SIZE`, default `40000`), and the sampling seed (`RANDOM_SEED`, default `0`) are exposed as modifiable constants at the top of [`generate_ld.sh`](generate_ld.sh).
 
 ### Pipeline steps
 
@@ -183,9 +191,21 @@ All three thresholds are exposed as modifiable constants at the top of [`generat
 3. **QC-filter variants** (`qc_snps.sh` + `qc_snps.py`)
    Downloads the SBayesRC liftover CSV (from the [sbayesrc-liftover](https://github.com/jesseICR/sbayesrc-liftover) release, contains the hg19 → hg38 allele mapping with HRC-imputed `A1Freq`) and runs Python QC locally. Aligns SBayesRC's hg19 `A1Freq` onto the hg38 ALT allele (handling palindromic/strand-flipped SNPs via the Watson–Crick complement), applies the three filters, and writes the annotated QC-passed CSV.
 
+4. **Sample 40k LD-reference cohort** (`sample_ld_cohort.sh` + `sample_ld_cohort.py`)
+   Submits a Swiss Army Knife job that intersects `fit_pca_iids.txt` (Step 24 of `get_genotypes.sh`), `sex_covar.txt` (Step 27), and White British (UKBB field 22006 == 1), then random-samples `LD_COHORT_SIZE` individuals with a fixed seed for reproducibility. All sampled IIDs are WGS-sequenced (`fit_pca_iids.txt` already excludes imputed-only individuals). Outputs `ld_ref_40k_iids.txt` (two-column FID/IID) and `ld_ref_cohort_log.txt` to `$DX_OUTPUT_DIR/ld_reference/`.
+
+5. **Derive hg38 LD-block boundaries** (`build_hg38_blocks.sh` + `build_hg38_blocks.py`)
+   The `sbayesrc_liftover_results.csv` downloaded in Step 3 already contains a per-SNP `Block` id (SBayesRC's original 4 cM block partition) alongside each SNP's `pos_hg38`. For each `Block` id we compute `min_i = min(pos_hg38)` and `max_i = max(pos_hg38)`, then set `StartBP_i = min_i − 1` and `EndBP_i = max_i + 1`, each decremented/incremented further while the bound coincides with any SBayesRC panel SNP position (defensive against dense SNP regions where adjacent positions differ by 1 bp). This yields `StartBP_i < pos < EndBP_i` strictly for every SNP in block `i`, with no SNP ever landing on any boundary — regardless of which half-open convention SBayesRC's `LDstep1` uses internally. Rows with `pos_hg38 == -1` (1,771 unlifted SBayesRC SNPs) are skipped. No interval liftOver is performed; this trivially achieves 100 % coverage of every QC-passed SNP by some block. All 591 original blocks are retained, with 0 inter-block overlaps. Writes `data/ld_reference/ref4cM_hg38.pos` locally and uploads it to `$DX_OUTPUT_DIR/ld_reference/ref4cM_hg38.pos`.
+
+6. **Build per-chromosome LD-reference bfiles** (`build_ld_ref_bfiles.sh`)
+   Extracts the `variant_id` column from the QC-passed CSV and uploads it as `$DX_OUTPUT_DIR/ld_reference/ld_ref_snps.txt`, then submits 22 parallel Swiss Army Knife jobs. Each job runs `plink2 --pfile wgs_pfiles/chr{N} --keep ld_ref_40k_iids.txt --extract ld_ref_snps.txt --make-bed`, producing per-chromosome bfiles at `$DX_OUTPUT_DIR/ld_reference/bfiles/chr{1..22}.{bed,bim,fam,log}`. These bfiles, together with the hg38 block file, are the direct inputs to SBayesRC's `LDstep1`–`LDstep4`.
+
 ### What it produces
 
-`data/freq_compare/wgs_vs_imputed_freq_qc_passed.csv` — one row per QC-passed variant, with the original freq-comparison columns plus four derived columns: `alt_freq_wgs`, `alt_freq_topmed`, `abs_diff_wgs_vs_topmed`, and `alt_freq_hrc` (SBayesRC HRC-imputed ALT frequency in hg38). The `variant_id` column (RSIDs) is the input list for the LD-generation step.
+- **`data/freq_compare/wgs_vs_imputed_freq_qc_passed.csv`** — one row per QC-passed variant, with the original freq-comparison columns plus four derived columns: `alt_freq_wgs`, `alt_freq_topmed`, `abs_diff_wgs_vs_topmed`, and `alt_freq_hrc` (SBayesRC HRC-imputed ALT frequency in hg38). The `variant_id` column (RSIDs) is the SNP list for the LD reference.
+- **`$DX_OUTPUT_DIR/ld_reference/ld_ref_40k_iids.txt`** — the 40k LD-reference cohort (FID/IID, sorted numerically).
+- **`$DX_OUTPUT_DIR/ld_reference/ref4cM_hg38.pos`** — the hg38-lifted block-boundary file (also cached locally at `data/ld_reference/ref4cM_hg38.pos`).
+- **`$DX_OUTPUT_DIR/ld_reference/bfiles/chr{1..22}.{bed,bim,fam,log}`** — per-chromosome WGS bfiles filtered to the 40k cohort × QC-passed SNPs.
 
 ### Variant counts (default thresholds)
 
@@ -193,10 +213,10 @@ All three thresholds are exposed as modifiable constants at the top of [`generat
 |---|---:|---:|
 | Original SBayesRC panel (hg19 → hg38 liftover) | 7,356,518 | — |
 | After WGS + TopMed extraction + merge (`get_genotypes.sh` outputs) | 7,349,366 | 7,152 |
-| After QC filtering (`generate_ld.sh` output) | 7,346,501 | 2,865 |
-| **Total lost from the original SBayesRC panel** | | **10,017** |
+| After QC filtering (`generate_ld.sh` output) | 7,346,329 | 3,037 |
+| **Total lost from the original SBayesRC panel** | | **10,189** |
 
-Of the 2,865 variants dropped by QC: 153 by the MAF filter, 1,766 by the WGS-vs-TopMed freq-diff filter, 1,462 by the WGS-vs-HRC freq-diff filter (with 447 variants failing both freq-diff filters jointly).
+Of the 3,037 variants dropped by QC: 333 by the MAF filter, 1,766 by the WGS-vs-TopMed freq-diff filter, 1,462 by the WGS-vs-HRC freq-diff filter (with 447 variants failing both freq-diff filters jointly and 75 failing both the MAF and WGS-vs-TopMed filters jointly).
 
 ### Running it
 
@@ -205,7 +225,7 @@ source ~/venvs/dnanexus/bin/activate   # if not already active
 bash generate_ld.sh
 ```
 
-The only DNAnexus write is Step 1 (the frequency-comparison output at `$DX_OUTPUT_DIR/freq_compare/wgs_vs_imputed_freq.csv`). Steps 2 and 3 are local only. A full fresh run on the default thresholds takes ~15 minutes end-to-end (dominated by the Step 1 DNAnexus job); subsequent re-runs skip every step.
+DNAnexus writes happen in Steps 1, 4, 5 (upload only), and 6. Steps 2, 3, and the local portion of Step 5 are local only. A full fresh run on the default thresholds takes ~30–45 minutes end-to-end (dominated by the Step 1 frequency-comparison job and the Step 6 per-chromosome bfile jobs); subsequent re-runs skip every step.
 
 ## Running a GWAS
 
@@ -434,3 +454,8 @@ Configured at the top of `get_genotypes.sh`. These apply to WGS extraction only 
 | `download_freq_compare.sh` | Downloads the freq-comparison CSV from DNAnexus to `data/freq_compare/` |
 | `qc_snps.sh` | Wrapper that caches the SBayesRC liftover CSV and invokes `qc_snps.py` |
 | `qc_snps.py` | Applies MAF + WGS-vs-TopMed + WGS-vs-HRC freq-diff filters to produce the QC-passed SNP list |
+| `sample_ld_cohort.sh` | Submits SAK job to sample the 40k LD-reference cohort |
+| `sample_ld_cohort.py` | Intersects `fit_pca_iids`, `sex_covar`, White British (UKBB 22006); random-samples with fixed seed |
+| `build_hg38_blocks.sh` | Wrapper that invokes `build_hg38_blocks.py` and uploads the resulting `.pos` file to DNAnexus |
+| `build_hg38_blocks.py` | Derives hg38 block boundaries from the per-SNP `Block` column of `sbayesrc_liftover_results.csv` |
+| `build_ld_ref_bfiles.sh` | Uploads QC-passed SNP list, submits 22 parallel SAK jobs to build per-chrom WGS bfiles for the LD reference |

@@ -14,6 +14,7 @@ notes.md
 data/support/ukb_snp_qc.txt
 data/support/ukbb_500k_qc_pass_direct_kinship_subsetted_snps.txt
 data/freq_compare/
+data/ld_reference/
 tools/
 logs/
 nohup.out
