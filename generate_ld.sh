@@ -15,6 +15,9 @@
 #   4. Sample 40k LD-reference cohort (unrelated European White British, fixed seed)
 #   5. Derive hg38 LD-block boundaries from SBayesRC's per-SNP Block assignments
 #   6. Build per-chromosome WGS bfiles filtered to the 40k cohort x QC-passed SNPs
+#   7. Initialize the LD-matrix workspace on DNAnexus (SBayesRC::LDstep1)
+#   8. Build per-block LD matrices + eigen decomposition (LDstep2 + LDstep3, per-chrom)
+#   9. Merge per-block LD info into snp.info (LDstep4)
 
 set -euo pipefail
 
@@ -46,6 +49,12 @@ export DX_LD_SNPS_FILE="${DX_LD_REF_DIR}/ld_ref_snps.txt"
 export DX_LD_BFILE_DIR="${DX_LD_REF_DIR}/bfiles"
 export DX_LD_BLOCKS_FILE="${DX_LD_REF_DIR}/ref4cM_hg38.pos"
 
+# LD-matrix outputs (SBayesRC LDstep1–4)
+export DX_LDM_DIR="${DX_LD_REF_DIR}/ld_matrices"
+export DX_LDM_MA_FILE="${DX_LDM_DIR}/dummy_ma.ma"
+export DX_LDM_INFO_FILE="${DX_LDM_DIR}/ldm.info"
+export DX_LDM_SNP_INFO_FILE="${DX_LDM_DIR}/snp.info"
+
 # ---------------------------------------------------------------------------
 # Local paths
 # ---------------------------------------------------------------------------
@@ -69,6 +78,10 @@ export SBAYESRC_LIFTOVER_URL="https://github.com/jesseICR/sbayesrc-liftover/rele
 export LD_COHORT_SIZE=40000
 export RANDOM_SEED=0
 export LD_REF_INSTANCE_TYPE="mem2_ssd1_v2_x16"
+
+# LD-matrix generation (Steps 7–9)
+export LD_MATRICES_INSTANCE_TYPE="mem2_ssd1_v2_x16"
+export LD_MATRICES_OMP_THREADS=16
 
 # ---------------------------------------------------------------------------
 # Logging — all subsequent output goes to both terminal and log file
@@ -134,9 +147,32 @@ echo ""
 echo "=== Step 6: Build per-chromosome LD-reference bfiles ==="
 bash "${SCRIPT_DIR}/build_ld_ref_bfiles.sh"
 
+# ---------------------------------------------------------------------------
+# Step 7: Initialize LD-matrix workspace (SBayesRC::LDstep1)
+# ---------------------------------------------------------------------------
+echo ""
+echo "=== Step 7: Initialize LD-matrix workspace (LDstep1) ==="
+bash "${SCRIPT_DIR}/init_ld_matrices.sh"
+
+# ---------------------------------------------------------------------------
+# Step 8: Build per-chromosome LD matrices + eigen (LDstep2 + LDstep3)
+# ---------------------------------------------------------------------------
+echo ""
+echo "=== Step 8: Build LD matrices + eigen decomposition (LDstep2 + LDstep3) ==="
+bash "${SCRIPT_DIR}/build_ld_matrices.sh"
+
+# ---------------------------------------------------------------------------
+# Step 9: Merge per-block LD info (SBayesRC::LDstep4)
+# ---------------------------------------------------------------------------
+echo ""
+echo "=== Step 9: Merge per-block LD info (LDstep4) ==="
+bash "${SCRIPT_DIR}/merge_ld_info.sh"
+
 echo ""
 echo "=== Generate-LD pipeline complete ==="
 echo "    Final QC-passed CSV: ${LOCAL_QC_PASSED_CSV}"
 echo "    LD-reference cohort: ${DX_LD_COHORT_FILE}"
 echo "    LD-reference blocks: ${LOCAL_BLOCKS_HG38} (also at ${DX_LD_BLOCKS_FILE})"
 echo "    LD-reference bfiles: ${DX_LD_BFILE_DIR}/chr{1..22}.{bed,bim,fam,log}"
+echo "    LD matrices (eigen): ${DX_LDM_DIR}/block{i}.eigen.bin"
+echo "    LD matrices (info):  ${DX_LDM_INFO_FILE} and ${DX_LDM_SNP_INFO_FILE}"
