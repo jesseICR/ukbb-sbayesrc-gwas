@@ -8,7 +8,7 @@ This pipeline extracts ~7 million SBayesRC variant genotypes from UK Biobank [DR
 
 The pipeline produces a training and test set of individuals genetically classified as majority European ancestry via ADMIXTURE K=6 projection. The test set is a subset of [White British](https://biobank.ndph.ox.ac.uk/ukb/field.cgi?id=22006) siblings. No individuals in the training cohort are related to individuals in the testing cohort above a KING kinship coefficient of 0.0442 (the lower bound of relatedness for third-degree relatives). Individuals with [sex chromosome aneuploidy](https://biobank.ctsu.ox.ac.uk/ukb/field.cgi?id=22019) are excluded from both cohorts. Because DRAGEN WGS includes approximately 5,000 individuals who were not previously genotyped by the UK Biobank, KING kinship is recomputed as part of this pipeline using a subset of the QC SNPs that the UK Biobank used to compute relatedness ([Bycroft et al. 2018](https://www.nature.com/articles/s41586-018-0579-z)). Principal components are fit on European training-set individuals unrelated to all White British siblings, then projected onto the training and testing cohorts for use as covariates in GWAS and PRS validation, respectively.
 
-**Runtime:** approximately 1 day end-to-end. **Cost:** approximately 15–20 GBP on DNAnexus.
+**Runtime:** approximately 1 day end-to-end (~28 hours). **Cost:** approximately £50 on DNAnexus. See [Runtime and cost](#runtime-and-cost) for a per-step breakdown.
 
 The pipeline is fully reproducible and designed to run on **any** UK Biobank RAP user's project. All steps are idempotent — the pipeline can be re-run safely at any point and will skip work that has already been completed.
 
@@ -157,6 +157,52 @@ This pipeline depends on two companion repositories:
 
 29. **Run height GWAS example** (`run_continuous_regenie_gwas.sh`)
     Launches a continuous-trait REGENIE GWAS using the height example input files from Step 28. This step demonstrates the standalone GWAS runner tool described in [Running a GWAS](#running-a-gwas). Submits the REGENIE app on DNAnexus with default settings (RINT enabled, block sizes 1000/200) and writes results to `$DX_OUTPUT_DIR/regenie_output/height_example/`.
+
+## Runtime and cost
+
+The table below breaks down wall-clock runtime and DNAnexus cost (GBP) for each step in [`get_genotypes.sh`](get_genotypes.sh), based on an end-to-end pipeline run completed 2026-04-15 on a UK Biobank RAP project. A fresh clone-and-run on your own project will produce comparable figures, modulo the caveats below.
+
+**Caveats**
+
+- **Job priority.** The recorded run executed most DNAnexus jobs at `high` priority. The current default in `get_genotypes.sh` is `DX_PRIORITY="normal"`, which uses cheaper spot instances and is typically ~3–4× cheaper per job than `high`, at the trade-off of longer queue times. The figures in the table reflect the recorded run's prices, not a re-priced `normal` estimate — a fresh run with the current default priority should land closer to £20–25 in total cost.
+- **Local steps.** Steps 1, 2, 4, 5, 8, 11, and 15 run on your local machine and incur no DNAnexus compute charge. Their runtime mostly reflects file I/O between your machine and the platform.
+- **Parallel steps.** Steps that submit per-chromosome jobs (3, 6, 7, 10, 12, 13) and per-batch jobs (21) report the cost summed across all child jobs and the wall clock of the slowest child job.
+- **Step 16.** KING kinship runs on a 64-core (`mem2_ssd1_v2_x64`) instance and is the largest single cost in the pipeline by a wide margin.
+
+| Step | Description | Wall clock | Cost (GBP) |
+|------|-------------|-----------:|-----------:|
+| 1  | Generate DRAGEN variant IDs *(local)*              | < 1 min | £0      |
+| 2  | Upload DRAGEN IDs to DNAnexus *(local upload)*     | ~1 min  | £0      |
+| 3  | Extract WGS variants per chromosome (22 jobs)      | ~30 min | £0.82   |
+| 4  | Generate TopMed variant IDs *(local)*              | < 1 min | £0      |
+| 5  | Upload TopMed IDs to DNAnexus *(local upload)*     | ~1 min  | £0      |
+| 6  | Extract imputed variants per chromosome (22 jobs)  | ~1h 40m | £11.69  |
+| 7  | Back up original pvar files (44 jobs)              | ~22 min | £1.09   |
+| 8  | Standardize pvar files *(local)*                   | ~15 min | £0      |
+| 9  | Find imputed-only IIDs                             | ~2 min  | £0.02   |
+| 10 | Merge WGS + imputed (22 merge + 22 convert jobs)   | ~50 min | £6.23   |
+| 11 | Validate merged pfiles *(local)*                   | < 2 min | £0      |
+| 12 | Convert merged pfiles to BGEN (22 jobs)            | ~22 min | £2.93   |
+| 13 | Extract direct SNPs per chromosome (22 jobs)       | ~5 min  | £0.22   |
+| 14 | Merge direct-SNP pfiles into bfile                 | ~12 min | £0.13   |
+| 15 | Subset direct SNPs to kinship SNPs *(local)*       | ~3 min  | £0      |
+| 16 | KING kinship estimation                            | ~6h 40m | £18.30  |
+| 17 | Kinship QC                                         | ~2 min  | £0.01   |
+| 18 | Classify close relationships                       | ~3 min  | £0.01   |
+| 19 | Prepare ADMIXTURE inputs                           | ~6 min  | £0.01   |
+| 20 | Split into ADMIXTURE batches                       | ~8 min  | £0.08   |
+| 21 | ADMIXTURE projection (25 batches + concat)         | ~3h 40m | £5.98   |
+| 22 | Classify European ancestry                         | ~4 min  | < £0.01 |
+| 23 | Build train/test sample split                      | ~4 min  | £0.01   |
+| 24 | Select unrelated European IIDs for PCA             | ~4 min  | £0.01   |
+| 25 | PCA SNP QC                                         | ~14 min | £0.03   |
+| 26 | Fit PCA & project onto all samples                 | ~1h 40m | £0.98   |
+| 27 | Build genetic sex covariate                        | ~4 min  | £0.04   |
+| 28 | Set up height GWAS example                         | ~3 min  | £0.03   |
+| 29 | Run height GWAS (REGENIE)                          | ~10h    | £3.02   |
+| **Total** | | **~28 hours** | **£51.63** |
+
+Six steps account for ~94% of the total cost: KING kinship (Step 16, £18.30), imputed-variant extraction (Step 6, £11.69), WGS/imputed merge and pfile conversion (Step 10, £6.23), ADMIXTURE projection (Step 21, £5.98), REGENIE height GWAS (Step 29, £3.02), and BGEN conversion (Step 12, £2.93). The largest runtime contributors are Step 29 (~10h), Step 16 (~6h 40m), Step 21 (~3h 40m), Step 6 (~1h 40m), and Step 26 (~1h 40m).
 
 ## Running a GWAS
 
