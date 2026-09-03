@@ -82,7 +82,7 @@ export DX_KINSHIP_SNPS_FILE="${DX_OUTPUT_DIR}/kinship/ukbb_500k_qc_pass_direct_k
 export KINSHIP_INSTANCE_TYPE="mem2_ssd1_v2_x64"
 
 # ADMIXTURE K=6 projection
-export ADMIXTURE_TSV_URL="https://raw.githubusercontent.com/jesseICR/public-statgen/main/outputs/admixture-global-6/admixture_allele_freqs.tsv"
+export ADMIXTURE_TSV_URL="https://raw.githubusercontent.com/human-genomics/public-statgen/main/outputs/admixture-global-6/admixture_allele_freqs.tsv"
 export ADMIXTURE_DOWNLOAD_URL="https://dalexander.github.io/admixture/binaries/admixture_linux-1.3.0.tar.gz"
 export ADMIXTURE_K=6
 export ADMIXTURE_BATCH_SIZE=20000
@@ -135,7 +135,7 @@ if [[ -s "${ALIGNMENT_FILE}" ]]; then
 else
     echo "  Downloading sbayesrc_hg38.csv ..."
     curl -fsSL -o "${ALIGNMENT_FILE}" \
-        "https://github.com/jesseICR/sbayesrc-liftover/releases/download/v1.0/sbayesrc_hg38.csv"
+        "https://github.com/human-genomics/sbayesrc-liftover/releases/download/v1.0/sbayesrc_hg38.csv"
     echo "  Downloaded ($(wc -l < "${ALIGNMENT_FILE}") lines)"
 fi
 
